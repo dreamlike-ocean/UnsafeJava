@@ -42,8 +42,11 @@ public class Main {
 //
 //        continuation.run();
 //        continuation.run();
+        TerminatingThreadLocal<String> local = new TerminatingThreadLocal<>();
+        new Thread(() -> {
+            local.set("!@3");
 
-
+        }).start();
         new Scanner(System.in)
                 .nextLine();
     }

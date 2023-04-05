@@ -6,12 +6,19 @@ import net.bytebuddy.matcher.ElementMatchers;
 
 import java.lang.invoke.MethodHandle;
 import java.lang.invoke.MethodType;
+import java.lang.invoke.VarHandle;
 import java.lang.reflect.Field;
 import java.lang.reflect.Method;
+import java.util.function.Consumer;
 
 public class TerminatingThreadLocal<T> extends ThreadLocal<T> {
 
-    private final static MethodHandle internalConstructorMH = init();
+    private final static MethodHandle internalConstructorMH;
+
+    private final static VarHandle callBackVH;
+
+
+
 
 
     private final ThreadLocal<T> internal;
@@ -19,6 +26,8 @@ public class TerminatingThreadLocal<T> extends ThreadLocal<T> {
     public TerminatingThreadLocal() {
         try {
             internal = (ThreadLocal<T>) internalConstructorMH.invoke();
+            CallBack<T> callBack = this::threadTerminated;
+            callBackVH.set(internal, callBack);
         } catch (Throwable e) {
             throw new RuntimeException(e);
         }
@@ -47,7 +56,26 @@ public class TerminatingThreadLocal<T> extends ThreadLocal<T> {
     }
 
 
-    private static MethodHandle init() {
+    static {
+        var customerTerminatingThreadLocalClass = init();
+
+        try {
+            internalConstructorMH = VirtualThreadUnsafe
+                    .IMPL_LOOKUP
+                    .in(customerTerminatingThreadLocalClass)
+                    .findConstructor(customerTerminatingThreadLocalClass, MethodType.methodType(void.class));
+
+            callBackVH = VirtualThreadUnsafe
+                    .IMPL_LOOKUP
+                    .in(customerTerminatingThreadLocalClass)
+                    .findVarHandle(customerTerminatingThreadLocalClass, "callback", CallBack.class);
+
+        }catch (Throwable throwable) {
+            throw new RuntimeException(throwable);
+        }
+    }
+
+    private static Class init() {
        try {
            String className = "jdk.internal.misc.TerminatingThreadLocal";
            Class<?> threadLocalClass = Class.forName(className);
@@ -70,21 +98,22 @@ public class TerminatingThreadLocal<T> extends ThreadLocal<T> {
 
            ByteBuddy buddy = new ByteBuddy();
 
-           Class<?> customerTerminatingThreadLocalClass = buddy.subclass(threadLocalClass)
+          return  buddy.subclass(threadLocalClass)
+                   .defineField("callback", CallBack.class)
                    .method(ElementMatchers.named("threadTerminated"))
-                   //todo 转发到我们搞得类上面。。。
-                   .intercept(MethodDelegation.to(Main.Proxy.class))
+                   // 转发到我们搞得类上面。。。
+                   .intercept(MethodDelegation.toField("callback"))
                    .make()
                    .load(TerminatingThreadLocal.class.getClassLoader())
                    .getLoaded();
 
-           return VirtualThreadUnsafe
-                   .IMPL_LOOKUP
-                   .in(customerTerminatingThreadLocalClass)
-                   .findConstructor(customerTerminatingThreadLocalClass, MethodType.methodType(void.class));
+
        }catch (Throwable throwable) {
            throw new RuntimeException(throwable);
        }
     }
 
+    public static interface CallBack<T> {
+        void threadTerminated(T value);
+    }
 }
