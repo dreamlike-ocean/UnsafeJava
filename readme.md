@@ -4,6 +4,7 @@
 - CarrierThreadLocal
 - 自定义调度器
 - Continuation API 包含yield和run原语
+- TerminatingThreadLocal API
 
 原理很简单
 代码如下
@@ -47,3 +48,8 @@ IMPL_LOOKUP这个是无视各种权限的lookup，从它这里获取到的Method
 
 ```
 类似于lambda和sam
+
+
+TerminatingThreadLocal API的则是比较复杂
+这里用了内部的`jdk.internal.access.JavaLangAccess`的这个玩意强制打开限制，让我可以以继承的方式自定义它的销毁函数
+这里使用bytebuddy继承然后转发到field上面 具体看代码吧。。。
