@@ -27,7 +27,6 @@ public class Continuation {
 
 
 
-
     public Continuation(Runnable runnable) {
         this(CONTINUATION_CONSTRUCTOR.apply(scope, runnable));
     }
@@ -35,6 +34,11 @@ public class Continuation {
     private Continuation(Object internalContinuation) {
         this.internalContinuation = internalContinuation;
     }
+
+    public boolean inContinuation(){
+        return internalContinuation != null;
+    }
+
 
     public void run() {
         try {

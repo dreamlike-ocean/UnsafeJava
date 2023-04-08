@@ -9,18 +9,12 @@ import java.lang.invoke.MethodType;
 import java.lang.invoke.VarHandle;
 import java.lang.reflect.Field;
 import java.lang.reflect.Method;
-import java.util.function.Consumer;
 
 public class TerminatingThreadLocal<T> extends ThreadLocal<T> {
 
     private final static MethodHandle internalConstructorMH;
 
     private final static VarHandle callBackVH;
-
-
-
-
-
     private final ThreadLocal<T> internal;
 
     public TerminatingThreadLocal() {

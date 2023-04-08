@@ -7,6 +7,12 @@
     <groupId>top.dreamlike</groupId>
     <artifactId>UnsafeVirtualThread</artifactId>
     <version>1.0-SNAPSHOT</version>
+    <packaging>pom</packaging>
+
+    <modules>
+        <module>core</module>
+        <module>vertx-ext</module>
+    </modules>
 
     <properties>
         <maven.compiler.source>20</maven.compiler.source>
@@ -14,16 +20,7 @@
         <project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
         <java.version>20</java.version>
     </properties>
-    <dependencies>
-        <!-- https://mvnrepository.com/artifact/net.bytebuddy/byte-buddy -->
-        <dependency>
-            <groupId>net.bytebuddy</groupId>
-            <artifactId>byte-buddy</artifactId>
-            <version>1.14.3</version>
-        </dependency>
 
-
-    </dependencies>
     <build>
         <plugins>
             <plugin>
@@ -46,7 +43,7 @@
                     </execution>
                 </executions>
                 <configuration>
-                    <!--                    <parameters>true</parameters>-->
+                    <parameters>true</parameters>
                     <source>${java.version}</source>
                     <target>${java.version}</target>
                     <encoding>UTF-8</encoding>

@@ -6,7 +6,10 @@ import net.bytebuddy.matcher.ElementMatchers;
 
 import java.lang.reflect.Field;
 import java.lang.reflect.Method;
+import java.nio.channels.FileChannel;
 import java.util.Scanner;
+import java.util.concurrent.ExecutorService;
+import java.util.concurrent.Executors;
 
 public class Main {
     public static void main(String[] args) throws Throwable {
@@ -19,6 +22,7 @@ public class Main {
 //            threadLocal.set("!23123123");
 //            System.out.println("dreamlikeThread:"+Thread.currentThread());
 //        });
+//
 //        builder.start(() -> {
 //            System.out.println(Thread.currentThread()+":"+threadLocal.get());
 //            System.out.println("virtual thread`s carruer Thread:"+VirtualThreadUnsafe.currentCarrierThread());
@@ -42,25 +46,10 @@ public class Main {
 //
 //        continuation.run();
 //        continuation.run();
-        TerminatingThreadLocal<String> local = new TerminatingThreadLocal<>();
-        new Thread(() -> {
-            local.set("!@3");
+        Continuation continuation = Continuation.currentContinuation();
+        System.out.println(continuation);
 
-        }).start();
-        new Scanner(System.in)
-                .nextLine();
     }
 
-    public static class S {
-        protected void threadTerminated(String value) {
 
-        }
-    }
-
-    public static class Proxy {
-
-        public static <T> void threadTerminated(T value) {
-            System.out.println("terminate:"+value);
-        }
-    }
 }
