@@ -53,3 +53,7 @@ IMPL_LOOKUP这个是无视各种权限的lookup，从它这里获取到的Method
 TerminatingThreadLocal API的则是比较复杂
 这里用了内部的`jdk.internal.access.JavaLangAccess`的这个玩意强制打开限制，让我可以以继承的方式自定义它的销毁函数
 这里使用bytebuddy继承然后转发到field上面 具体看代码吧。。。
+
+对于给Vert.x的扩展，用的是Async/Await这种风格的，避免某些半瓶水再来烦我，我讲一下为什么要这样写
+首先我写的await函数只是强制要求当前在Continuation中而已，没有传染性的
+其次写`AsyncScope`只是帮你开启Continuation罢了
