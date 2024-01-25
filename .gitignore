@@ -2,6 +2,9 @@ target/
 !.mvn/wrapper/maven-wrapper.jar
 !**/src/main/**/target/
 !**/src/test/**/target/
+.idea
+core/src/main/c/build
+core/src/main/c/cmake-build-debug
 
 ### IntelliJ IDEA ###
 .idea/modules.xml

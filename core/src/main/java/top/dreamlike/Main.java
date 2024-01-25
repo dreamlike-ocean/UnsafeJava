@@ -1,19 +1,16 @@
 package top.dreamlike;
 
-import net.bytebuddy.ByteBuddy;
-import net.bytebuddy.implementation.MethodDelegation;
-import net.bytebuddy.matcher.ElementMatchers;
-
-import java.lang.reflect.Field;
-import java.lang.reflect.Method;
-import java.nio.channels.FileChannel;
-import java.util.Scanner;
+import java.lang.foreign.Arena;
+import java.lang.foreign.MemorySegment;
+import java.lang.invoke.MethodHandles;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
 
 public class Main {
-    public static void main(String[] args) throws Throwable {
 
+    private static MethodHandles.Lookup a = MethodHandles.lookup();
+    public static void main(String[] args) throws Throwable {
+//
 //        ExecutorService eventLoop = Executors.newSingleThreadExecutor((r) -> new Thread(r,"dreamlike"));
 //        CarrierThreadLocal<String> threadLocal = new CarrierThreadLocal<>();
 //        Thread.Builder.OfVirtual builder = VirtualThreadUnsafe.VIRTUAL_THREAD_BUILDER
@@ -28,7 +25,7 @@ public class Main {
 //            System.out.println("virtual thread`s carruer Thread:"+VirtualThreadUnsafe.currentCarrierThread());
 //        });
 //        eventLoop.close();
-
+//
 //        Runnable runnable = () -> {
 //            Object continuation = Continuation.currentContinuation().internalContinuation;
 //            System.out.println(System.identityHashCode(continuation));
@@ -46,8 +43,12 @@ public class Main {
 //
 //        continuation.run();
 //        continuation.run();
-        Continuation continuation = Continuation.currentContinuation();
-        System.out.println(continuation);
+
+//        try (Arena arena = Arena.ofConfined()) {
+//            MemorySegment segment = arena.allocate(1024);
+//
+//        }
+
 
     }
 
