@@ -11,7 +11,14 @@ JNIEXPORT jobject JNICALL Java_top_dreamlike_VirtualThreadUnsafe_getTrustedLookU
   auto fieldId = env->GetStaticFieldID(lookupClass, "IMPL_LOOKUP", "Ljava/lang/invoke/MethodHandles$Lookup;");
   auto TRUST_LOOKUP = env->GetStaticObjectField(lookupClass, fieldId);
   return TRUST_LOOKUP;
-
 }
 
+
+
+JNIEXPORT jlong JNICALL Java_top_dreamlike_VirtualThreadUnsafe_getMainA(JNIEnv *env, jclass jclazz) {
+  auto lookupClass = env->FindClass("top/dreamlike/Main");
+  auto fieldId = env->GetStaticFieldID(lookupClass, "a", "J");
+  auto TRUST_LOOKUP = env->GetStaticLongField(lookupClass, fieldId);
+  return TRUST_LOOKUP;
+}
 

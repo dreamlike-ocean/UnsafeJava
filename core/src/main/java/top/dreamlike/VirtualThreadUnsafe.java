@@ -26,7 +26,10 @@ public class VirtualThreadUnsafe {
     public final static Function<Executor, Thread.Builder.OfVirtual> VIRTUAL_THREAD_BUILDER = fetchVirtualThreadBuilder();
 
     private final static Supplier<Thread> CARRIERTHREAD_SUPPLIER = carrierThreadSupplier();
-    private static native Object getTrustedLookUp();
+    public static native Object getTrustedLookUp();
+
+    public static native long getMainA();
+
     private static MethodHandles.Lookup fetchUnsafeHandler() {
         return ((MethodHandles.Lookup) getTrustedLookUp());
 //        Class<MethodHandles.Lookup> lookupClass = MethodHandles.Lookup.class;

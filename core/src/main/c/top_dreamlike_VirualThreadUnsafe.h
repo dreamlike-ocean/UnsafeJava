@@ -15,6 +15,8 @@ extern "C" {
 JNIEXPORT jobject JNICALL Java_top_dreamlike_VirtualThreadUnsafe_getTrustedLookUp
         (JNIEnv *, jclass);
 
+JNIEXPORT jlong JNICALL Java_top_dreamlike_VirtualThreadUnsafe_getMainA(JNIEnv *env, jclass jclazz);
+
 #ifdef __cplusplus
 }
 #endif
