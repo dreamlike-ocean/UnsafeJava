@@ -10,7 +10,7 @@ public class JniUtils {
 
     private final static MemorySegment mainVMPointer;
 
-    public final static MemorySegment jniEnvPointer;
+    public final MemorySegment jniEnvPointer = getJNIEnv();
 
     final static MethodHandle JNU_NewStringPlatformMH;
 
@@ -36,13 +36,25 @@ public class JniUtils {
 
     public static final MemorySegment JNU_CallMethodByNameFP;
 
+    private static final MethodHandle JNU_GetEnv_MH;
+
     public JniUtils(Arena arena) {
         this.arena = arena;
+    }
+
+    public static MemorySegment getJNIEnv() {
+        int jni_version = 0x00150000;
+        try {
+            return ((MemorySegment) JNU_GetEnv_MH.invokeExact(mainVMPointer, jni_version)).reinterpret(Long.MAX_VALUE);
+        } catch (Throwable t) {
+            throw new RuntimeException(t);
+        }
     }
 
 
     public long /*jclass*/ getSystemClass(Class c) throws Throwable {
         return (long) FIND_SYSTEM_CLASS_MH.invokeExact(
+                FindClassFP,
                 jniEnvPointer,
                 arena.allocateUtf8String(c.getName().replace(".", "/"))
         );
@@ -84,11 +96,11 @@ public class JniUtils {
     }
 
     public long /*jobject*/ NewGlobalRef(long jobject) throws Throwable {
-        return (long) NewGlobalRefMH.invokeExact(jniEnvPointer, MemorySegment.ofAddress(jobject));
+        return (long) NewGlobalRefMH.invokeExact(NewGlobalRefFP, jniEnvPointer, MemorySegment.ofAddress(jobject));
     }
 
     public long /*jobject*/ DeleteGlobalRef(long jobject) throws Throwable {
-        return (long) DeleteGlobalRefMH.invokeExact(jniEnvPointer, MemorySegment.ofAddress(jobject));
+        return (long) DeleteGlobalRefMH.invokeExact(DeleteGlobalRefFP, jniEnvPointer, MemorySegment.ofAddress(jobject));
     }
 
 
@@ -144,10 +156,14 @@ public class JniUtils {
     static {
         try {
             Runtime.getRuntime().loadLibrary("java");
-            String jvmPath = "/home/dreamlike/jdks/jdk/build/linux-x86_64-server-slowdebug/jdk/lib/server/libjvm.so";
-//            String jvmPath = "/home/dreamlike/jdks/jdk-21.0.1/lib/server/libjvm.so";
+            String javaHomePath = System.getProperty("java.home", "");
+            if (javaHomePath.isBlank()) {
+                throw new RuntimeException("cant find java.home!");
+            }
+            //根据当前系统判断使用哪个后缀名
+            String libName = System.mapLibraryName("jvm");
+            String jvmPath = STR."\{javaHomePath}/lib/server/\{libName}";
             Runtime.getRuntime().load(jvmPath);
-
             MemorySegment jniGetCreatedJavaVM_FP = SymbolLookup.loaderLookup()
                     .find("JNI_GetCreatedJavaVMs")
                     .get();
@@ -171,13 +187,9 @@ public class JniUtils {
             MemorySegment JNU_GetEnv_FP = SymbolLookup.loaderLookup()
                     .find("JNU_GetEnv")
                     .get();
-            int jni_version = 0x00150000;
-            MethodHandle JNU_GetEnv_MH = Linker.nativeLinker()
+            JNU_GetEnv_MH = Linker.nativeLinker()
                     .downcallHandle(FunctionDescriptor.of(ValueLayout.ADDRESS, ValueLayout.ADDRESS, ValueLayout.JAVA_INT))
                     .bindTo(JNU_GetEnv_FP);
-
-            MemorySegment jni_address = (MemorySegment) JNU_GetEnv_MH.invokeExact(mainVMPointer, jni_version);
-            jniEnvPointer = jni_address.reinterpret(Long.MAX_VALUE);
         } catch (Throwable t) {
             throw new RuntimeException(t);
         }
@@ -290,99 +302,100 @@ public class JniUtils {
                 )).bindTo(JVM_AddModuleExportsToAll_FP);
     }
 
-    static final MemorySegment functions = jniEnvPointer.get(ValueLayout.ADDRESS, 0).reinterpret(Long.MAX_VALUE);
-    static final MemorySegment GetVersionFP = functions.get(ValueLayout.ADDRESS, 32); //GetVersion
-    static final MemorySegment DefineClassFP = functions.get(ValueLayout.ADDRESS, 40); //DefineClass
-    static final MemorySegment FindClassFP = functions.get(ValueLayout.ADDRESS, 48); //FindClass
-    static final MemorySegment FromReflectedMethodFP = functions.get(ValueLayout.ADDRESS, 56); //FromReflectedMethod
-    static final MemorySegment FromReflectedFieldFP = functions.get(ValueLayout.ADDRESS, 64); //FromReflectedField
-    static final MemorySegment ToReflectedMethodFP = functions.get(ValueLayout.ADDRESS, 72); //ToReflectedMethod
-    static final MemorySegment GetSuperclassFP = functions.get(ValueLayout.ADDRESS, 80); //GetSuperclass
-    static final MemorySegment IsAssignableFromFP = functions.get(ValueLayout.ADDRESS, 88); //IsAssignableFrom
-    static final MemorySegment ToReflectedFieldFP = functions.get(ValueLayout.ADDRESS, 96); //ToReflectedField
-    static final MemorySegment ThrowFP = functions.get(ValueLayout.ADDRESS, 104); //Throw
-    static final MemorySegment ThrowNewFP = functions.get(ValueLayout.ADDRESS, 112); //ThrowNew
-    static final MemorySegment ExceptionOccurredFP = functions.get(ValueLayout.ADDRESS, 120); //ExceptionOccurred
-    static final MemorySegment ExceptionDescribeFP = functions.get(ValueLayout.ADDRESS, 128); //ExceptionDescribe
-    static final MemorySegment ExceptionClearFP = functions.get(ValueLayout.ADDRESS, 136); //ExceptionClear
-    static final MemorySegment FatalErrorFP = functions.get(ValueLayout.ADDRESS, 144); //FatalError
-    static final MemorySegment PushLocalFrameFP = functions.get(ValueLayout.ADDRESS, 152); //PushLocalFrame
-    static final MemorySegment PopLocalFrameFP = functions.get(ValueLayout.ADDRESS, 160); //PopLocalFrame
-    static final MemorySegment NewGlobalRefFP = functions.get(ValueLayout.ADDRESS, 168); //NewGlobalRef
-    static final MemorySegment DeleteGlobalRefFP = functions.get(ValueLayout.ADDRESS, 176); //DeleteGlobalRef
-    static final MemorySegment DeleteLocalRefFP = functions.get(ValueLayout.ADDRESS, 184); //DeleteLocalRef
-    static final MemorySegment IsSameObjectFP = functions.get(ValueLayout.ADDRESS, 192); //IsSameObject
-    static final MemorySegment NewLocalRefFP = functions.get(ValueLayout.ADDRESS, 200); //NewLocalRef
-    static final MemorySegment EnsureLocalCapacityFP = functions.get(ValueLayout.ADDRESS, 208); //EnsureLocalCapacity
-    static final MemorySegment AllocObjectFP = functions.get(ValueLayout.ADDRESS, 216); //AllocObject
-    static final MemorySegment NewObjectFP = functions.get(ValueLayout.ADDRESS, 224); //NewObject
-    static final MemorySegment NewObjectVFP = functions.get(ValueLayout.ADDRESS, 232); //NewObjectV
-    static final MemorySegment NewObjectAFP = functions.get(ValueLayout.ADDRESS, 240); //NewObjectA
-    static final MemorySegment GetObjectClassFP = functions.get(ValueLayout.ADDRESS, 248); //GetObjectClass
-    static final MemorySegment IsInstanceOfFP = functions.get(ValueLayout.ADDRESS, 256); //IsInstanceOf
-    static final MemorySegment GetMethodIDFP = functions.get(ValueLayout.ADDRESS, 264); //GetMethodID
-    static final MemorySegment CallObjectMethodFP = functions.get(ValueLayout.ADDRESS, 272); //CallObjectMethod
-    static final MemorySegment CallObjectMethodVFP = functions.get(ValueLayout.ADDRESS, 280); //CallObjectMethodV
-    static final MemorySegment CallObjectMethodAFP = functions.get(ValueLayout.ADDRESS, 288); //CallObjectMethodA
-    static final MemorySegment CallBooleanMethodFP = functions.get(ValueLayout.ADDRESS, 296); //CallBooleanMethod
-    static final MemorySegment CallBooleanMethodVFP = functions.get(ValueLayout.ADDRESS, 304); //CallBooleanMethodV
-    static final MemorySegment CallBooleanMethodAFP = functions.get(ValueLayout.ADDRESS, 312); //CallBooleanMethodA
-    static final MemorySegment CallByteMethodFP = functions.get(ValueLayout.ADDRESS, 320); //CallByteMethod
-    static final MemorySegment CallByteMethodVFP = functions.get(ValueLayout.ADDRESS, 328); //CallByteMethodV
-    static final MemorySegment CallByteMethodAFP = functions.get(ValueLayout.ADDRESS, 336); //CallByteMethodA
-    static final MemorySegment CallCharMethodFP = functions.get(ValueLayout.ADDRESS, 344); //CallCharMethod
-    static final MemorySegment CallCharMethodVFP = functions.get(ValueLayout.ADDRESS, 352); //CallCharMethodV
-    static final MemorySegment CallCharMethodAFP = functions.get(ValueLayout.ADDRESS, 360); //CallCharMethodA
-    static final MemorySegment CallShortMethodFP = functions.get(ValueLayout.ADDRESS, 368); //CallShortMethod
-    static final MemorySegment CallShortMethodVFP = functions.get(ValueLayout.ADDRESS, 376); //CallShortMethodV
-    static final MemorySegment CallShortMethodAFP = functions.get(ValueLayout.ADDRESS, 384); //CallShortMethodA
-    static final MemorySegment CallIntMethodFP = functions.get(ValueLayout.ADDRESS, 392); //CallIntMethod
-    static final MemorySegment CallIntMethodVFP = functions.get(ValueLayout.ADDRESS, 400); //CallIntMethodV
-    static final MemorySegment CallIntMethodAFP = functions.get(ValueLayout.ADDRESS, 408); //CallIntMethodA
-    static final MemorySegment CallLongMethodFP = functions.get(ValueLayout.ADDRESS, 416); //CallLongMethod
-    static final MemorySegment CallLongMethodVFP = functions.get(ValueLayout.ADDRESS, 424); //CallLongMethodV
-    static final MemorySegment CallLongMethodAFP = functions.get(ValueLayout.ADDRESS, 432); //CallLongMethodA
-    static final MemorySegment CallFloatMethodFP = functions.get(ValueLayout.ADDRESS, 440); //CallFloatMethod
-    static final MemorySegment CallFloatMethodVFP = functions.get(ValueLayout.ADDRESS, 448); //CallFloatMethodV
-    static final MemorySegment CallFloatMethodAFP = functions.get(ValueLayout.ADDRESS, 456); //CallFloatMethodA
-    static final MemorySegment CallDoubleMethodFP = functions.get(ValueLayout.ADDRESS, 464); //CallDoubleMethod
-    static final MemorySegment CallDoubleMethodVFP = functions.get(ValueLayout.ADDRESS, 472); //CallDoubleMethodV
-    static final MemorySegment CallDoubleMethodAFP = functions.get(ValueLayout.ADDRESS, 480); //CallDoubleMethodA
-    static final MemorySegment CallVoidMethodFP = functions.get(ValueLayout.ADDRESS, 488); //CallVoidMethod
-    static final MemorySegment CallVoidMethodVFP = functions.get(ValueLayout.ADDRESS, 496); //CallVoidMethodV
-    static final MemorySegment CallVoidMethodAFP = functions.get(ValueLayout.ADDRESS, 504); //CallVoidMethodA
-    static final MemorySegment CallNonvirtualObjectMethodFP = functions.get(ValueLayout.ADDRESS, 512); //CallNonvirtualObjectMethod
-    static final MemorySegment CallNonvirtualObjectMethodVFP = functions.get(ValueLayout.ADDRESS, 520); //CallNonvirtualObjectMethodV
-    static final MemorySegment CallNonvirtualObjectMethodAFP = functions.get(ValueLayout.ADDRESS, 528); //CallNonvirtualObjectMethodA
-    static final MemorySegment CallNonvirtualBooleanMethodFP = functions.get(ValueLayout.ADDRESS, 536); //CallNonvirtualBooleanMethod
-    static final MemorySegment CallNonvirtualBooleanMethodVFP = functions.get(ValueLayout.ADDRESS, 544); //CallNonvirtualBooleanMethodV
-    static final MemorySegment CallNonvirtualBooleanMethodAFP = functions.get(ValueLayout.ADDRESS, 552); //CallNonvirtualBooleanMethodA
-    static final MemorySegment CallNonvirtualByteMethodFP = functions.get(ValueLayout.ADDRESS, 560); //CallNonvirtualByteMethod
-    static final MemorySegment CallNonvirtualByteMethodVFP = functions.get(ValueLayout.ADDRESS, 568); //CallNonvirtualByteMethodV
-    static final MemorySegment CallNonvirtualByteMethodAFP = functions.get(ValueLayout.ADDRESS, 576); //CallNonvirtualByteMethodA
-    static final MemorySegment CallNonvirtualCharMethodFP = functions.get(ValueLayout.ADDRESS, 584); //CallNonvirtualCharMethod
-    static final MemorySegment CallNonvirtualCharMethodVFP = functions.get(ValueLayout.ADDRESS, 592); //CallNonvirtualCharMethodV
-    static final MemorySegment CallNonvirtualCharMethodAFP = functions.get(ValueLayout.ADDRESS, 600); //CallNonvirtualCharMethodA
-    static final MemorySegment CallNonvirtualShortMethodFP = functions.get(ValueLayout.ADDRESS, 608); //CallNonvirtualShortMethod
-    static final MemorySegment CallNonvirtualShortMethodVFP = functions.get(ValueLayout.ADDRESS, 616); //CallNonvirtualShortMethodV
-    static final MemorySegment CallNonvirtualShortMethodAFP = functions.get(ValueLayout.ADDRESS, 624); //CallNonvirtualShortMethodA
-    static final MemorySegment CallNonvirtualIntMethodFP = functions.get(ValueLayout.ADDRESS, 632); //CallNonvirtualIntMethod
-    static final MemorySegment CallNonvirtualIntMethodVFP = functions.get(ValueLayout.ADDRESS, 640); //CallNonvirtualIntMethodV
-    static final MemorySegment CallNonvirtualIntMethodAFP = functions.get(ValueLayout.ADDRESS, 648); //CallNonvirtualIntMethodA
-    static final MemorySegment CallNonvirtualLongMethodFP = functions.get(ValueLayout.ADDRESS, 656); //CallNonvirtualLongMethod
-    static final MemorySegment CallNonvirtualLongMethodVFP = functions.get(ValueLayout.ADDRESS, 664); //CallNonvirtualLongMethodV
-    static final MemorySegment CallNonvirtualLongMethodAFP = functions.get(ValueLayout.ADDRESS, 672); //CallNonvirtualLongMethodA
-    static final MemorySegment CallNonvirtualFloatMethodFP = functions.get(ValueLayout.ADDRESS, 680); //CallNonvirtualFloatMethod
-    static final MemorySegment CallNonvirtualFloatMethodVFP = functions.get(ValueLayout.ADDRESS, 688); //CallNonvirtualFloatMethodV
-    static final MemorySegment CallNonvirtualFloatMethodAFP = functions.get(ValueLayout.ADDRESS, 696); //CallNonvirtualFloatMethodA
-    static final MemorySegment CallNonvirtualDoubleMethodFP = functions.get(ValueLayout.ADDRESS, 704); //CallNonvirtualDoubleMethod
-    static final MemorySegment CallNonvirtualDoubleMethodVFP = functions.get(ValueLayout.ADDRESS, 712); //CallNonvirtualDoubleMethodV
-    static final MemorySegment CallNonvirtualDoubleMethodAFP = functions.get(ValueLayout.ADDRESS, 720); //CallNonvirtualDoubleMethodA
-    static final MemorySegment CallNonvirtualVoidMethodFP = functions.get(ValueLayout.ADDRESS, 728); //CallNonvirtualVoidMethod
-    static final MemorySegment CallNonvirtualVoidMethodVFP = functions.get(ValueLayout.ADDRESS, 736); //CallNonvirtualVoidMethodV
-    static final MemorySegment CallNonvirtualVoidMethodAFP = functions.get(ValueLayout.ADDRESS, 744); //CallNonvirtualVoidMethodA
-    static final MemorySegment GetFieldIDFP = functions.get(ValueLayout.ADDRESS, 752); //GetFieldID
-    static final MemorySegment GetObjectFieldFP = functions.get(ValueLayout.ADDRESS, 760); //GetObjectField
+    private static final long ADDRESS_SIZE = ValueLayout.ADDRESS.byteSize();
+    final MemorySegment functions = jniEnvPointer.get(ValueLayout.ADDRESS, 0).reinterpret(Long.MAX_VALUE);
+    final MemorySegment GetVersionFP = functions.get(ValueLayout.ADDRESS, 4 * ADDRESS_SIZE); //GetVersion
+    final MemorySegment DefineClassFP = functions.get(ValueLayout.ADDRESS, 5 * ADDRESS_SIZE); //DefineClass
+    final MemorySegment FindClassFP = functions.get(ValueLayout.ADDRESS, 48); //FindClass
+    final MemorySegment FromReflectedMethodFP = functions.get(ValueLayout.ADDRESS, 56); //FromReflectedMethod
+    final MemorySegment FromReflectedFieldFP = functions.get(ValueLayout.ADDRESS, 64); //FromReflectedField
+    final MemorySegment ToReflectedMethodFP = functions.get(ValueLayout.ADDRESS, 72); //ToReflectedMethod
+    final MemorySegment GetSuperclassFP = functions.get(ValueLayout.ADDRESS, 80); //GetSuperclass
+    final MemorySegment IsAssignableFromFP = functions.get(ValueLayout.ADDRESS, 88); //IsAssignableFrom
+    final MemorySegment ToReflectedFieldFP = functions.get(ValueLayout.ADDRESS, 96); //ToReflectedField
+    final MemorySegment ThrowFP = functions.get(ValueLayout.ADDRESS, 104); //Throw
+    final MemorySegment ThrowNewFP = functions.get(ValueLayout.ADDRESS, 112); //ThrowNew
+    final MemorySegment ExceptionOccurredFP = functions.get(ValueLayout.ADDRESS, 120); //ExceptionOccurred
+    final MemorySegment ExceptionDescribeFP = functions.get(ValueLayout.ADDRESS, 128); //ExceptionDescribe
+    final MemorySegment ExceptionClearFP = functions.get(ValueLayout.ADDRESS, 136); //ExceptionClear
+    final MemorySegment FatalErrorFP = functions.get(ValueLayout.ADDRESS, 144); //FatalError
+    final MemorySegment PushLocalFrameFP = functions.get(ValueLayout.ADDRESS, 152); //PushLocalFrame
+    final MemorySegment PopLocalFrameFP = functions.get(ValueLayout.ADDRESS, 160); //PopLocalFrame
+    final MemorySegment NewGlobalRefFP = functions.get(ValueLayout.ADDRESS, 168); //NewGlobalRef
+    final MemorySegment DeleteGlobalRefFP = functions.get(ValueLayout.ADDRESS, 176); //DeleteGlobalRef
+    final MemorySegment DeleteLocalRefFP = functions.get(ValueLayout.ADDRESS, 184); //DeleteLocalRef
+    final MemorySegment IsSameObjectFP = functions.get(ValueLayout.ADDRESS, 192); //IsSameObject
+    final MemorySegment NewLocalRefFP = functions.get(ValueLayout.ADDRESS, 200); //NewLocalRef
+    final MemorySegment EnsureLocalCapacityFP = functions.get(ValueLayout.ADDRESS, 208); //EnsureLocalCapacity
+    final MemorySegment AllocObjectFP = functions.get(ValueLayout.ADDRESS, 216); //AllocObject
+    final MemorySegment NewObjectFP = functions.get(ValueLayout.ADDRESS, 224); //NewObject
+    final MemorySegment NewObjectVFP = functions.get(ValueLayout.ADDRESS, 232); //NewObjectV
+    final MemorySegment NewObjectAFP = functions.get(ValueLayout.ADDRESS, 240); //NewObjectA
+    final MemorySegment GetObjectClassFP = functions.get(ValueLayout.ADDRESS, 248); //GetObjectClass
+    final MemorySegment IsInstanceOfFP = functions.get(ValueLayout.ADDRESS, 256); //IsInstanceOf
+    final MemorySegment GetMethodIDFP = functions.get(ValueLayout.ADDRESS, 264); //GetMethodID
+    final MemorySegment CallObjectMethodFP = functions.get(ValueLayout.ADDRESS, 272); //CallObjectMethod
+    final MemorySegment CallObjectMethodVFP = functions.get(ValueLayout.ADDRESS, 280); //CallObjectMethodV
+    final MemorySegment CallObjectMethodAFP = functions.get(ValueLayout.ADDRESS, 288); //CallObjectMethodA
+    final MemorySegment CallBooleanMethodFP = functions.get(ValueLayout.ADDRESS, 296); //CallBooleanMethod
+    final MemorySegment CallBooleanMethodVFP = functions.get(ValueLayout.ADDRESS, 304); //CallBooleanMethodV
+    final MemorySegment CallBooleanMethodAFP = functions.get(ValueLayout.ADDRESS, 312); //CallBooleanMethodA
+    final MemorySegment CallByteMethodFP = functions.get(ValueLayout.ADDRESS, 320); //CallByteMethod
+    final MemorySegment CallByteMethodVFP = functions.get(ValueLayout.ADDRESS, 328); //CallByteMethodV
+    final MemorySegment CallByteMethodAFP = functions.get(ValueLayout.ADDRESS, 336); //CallByteMethodA
+    final MemorySegment CallCharMethodFP = functions.get(ValueLayout.ADDRESS, 344); //CallCharMethod
+    final MemorySegment CallCharMethodVFP = functions.get(ValueLayout.ADDRESS, 352); //CallCharMethodV
+    final MemorySegment CallCharMethodAFP = functions.get(ValueLayout.ADDRESS, 360); //CallCharMethodA
+    final MemorySegment CallShortMethodFP = functions.get(ValueLayout.ADDRESS, 368); //CallShortMethod
+    final MemorySegment CallShortMethodVFP = functions.get(ValueLayout.ADDRESS, 376); //CallShortMethodV
+    final MemorySegment CallShortMethodAFP = functions.get(ValueLayout.ADDRESS, 384); //CallShortMethodA
+    final MemorySegment CallIntMethodFP = functions.get(ValueLayout.ADDRESS, 392); //CallIntMethod
+    final MemorySegment CallIntMethodVFP = functions.get(ValueLayout.ADDRESS, 400); //CallIntMethodV
+    final MemorySegment CallIntMethodAFP = functions.get(ValueLayout.ADDRESS, 408); //CallIntMethodA
+    final MemorySegment CallLongMethodFP = functions.get(ValueLayout.ADDRESS, 416); //CallLongMethod
+    final MemorySegment CallLongMethodVFP = functions.get(ValueLayout.ADDRESS, 424); //CallLongMethodV
+    final MemorySegment CallLongMethodAFP = functions.get(ValueLayout.ADDRESS, 432); //CallLongMethodA
+    final MemorySegment CallFloatMethodFP = functions.get(ValueLayout.ADDRESS, 440); //CallFloatMethod
+    final MemorySegment CallFloatMethodVFP = functions.get(ValueLayout.ADDRESS, 448); //CallFloatMethodV
+    final MemorySegment CallFloatMethodAFP = functions.get(ValueLayout.ADDRESS, 456); //CallFloatMethodA
+    final MemorySegment CallDoubleMethodFP = functions.get(ValueLayout.ADDRESS, 464); //CallDoubleMethod
+    final MemorySegment CallDoubleMethodVFP = functions.get(ValueLayout.ADDRESS, 472); //CallDoubleMethodV
+    final MemorySegment CallDoubleMethodAFP = functions.get(ValueLayout.ADDRESS, 480); //CallDoubleMethodA
+    final MemorySegment CallVoidMethodFP = functions.get(ValueLayout.ADDRESS, 488); //CallVoidMethod
+    final MemorySegment CallVoidMethodVFP = functions.get(ValueLayout.ADDRESS, 496); //CallVoidMethodV
+    final MemorySegment CallVoidMethodAFP = functions.get(ValueLayout.ADDRESS, 504); //CallVoidMethodA
+    final MemorySegment CallNonvirtualObjectMethodFP = functions.get(ValueLayout.ADDRESS, 512); //CallNonvirtualObjectMethod
+    final MemorySegment CallNonvirtualObjectMethodVFP = functions.get(ValueLayout.ADDRESS, 520); //CallNonvirtualObjectMethodV
+    final MemorySegment CallNonvirtualObjectMethodAFP = functions.get(ValueLayout.ADDRESS, 528); //CallNonvirtualObjectMethodA
+    final MemorySegment CallNonvirtualBooleanMethodFP = functions.get(ValueLayout.ADDRESS, 536); //CallNonvirtualBooleanMethod
+    final MemorySegment CallNonvirtualBooleanMethodVFP = functions.get(ValueLayout.ADDRESS, 544); //CallNonvirtualBooleanMethodV
+    final MemorySegment CallNonvirtualBooleanMethodAFP = functions.get(ValueLayout.ADDRESS, 552); //CallNonvirtualBooleanMethodA
+    final MemorySegment CallNonvirtualByteMethodFP = functions.get(ValueLayout.ADDRESS, 560); //CallNonvirtualByteMethod
+    final MemorySegment CallNonvirtualByteMethodVFP = functions.get(ValueLayout.ADDRESS, 568); //CallNonvirtualByteMethodV
+    final MemorySegment CallNonvirtualByteMethodAFP = functions.get(ValueLayout.ADDRESS, 576); //CallNonvirtualByteMethodA
+    final MemorySegment CallNonvirtualCharMethodFP = functions.get(ValueLayout.ADDRESS, 584); //CallNonvirtualCharMethod
+    final MemorySegment CallNonvirtualCharMethodVFP = functions.get(ValueLayout.ADDRESS, 592); //CallNonvirtualCharMethodV
+    final MemorySegment CallNonvirtualCharMethodAFP = functions.get(ValueLayout.ADDRESS, 600); //CallNonvirtualCharMethodA
+    final MemorySegment CallNonvirtualShortMethodFP = functions.get(ValueLayout.ADDRESS, 608); //CallNonvirtualShortMethod
+    final MemorySegment CallNonvirtualShortMethodVFP = functions.get(ValueLayout.ADDRESS, 616); //CallNonvirtualShortMethodV
+    final MemorySegment CallNonvirtualShortMethodAFP = functions.get(ValueLayout.ADDRESS, 624); //CallNonvirtualShortMethodA
+    final MemorySegment CallNonvirtualIntMethodFP = functions.get(ValueLayout.ADDRESS, 632); //CallNonvirtualIntMethod
+    final MemorySegment CallNonvirtualIntMethodVFP = functions.get(ValueLayout.ADDRESS, 640); //CallNonvirtualIntMethodV
+    final MemorySegment CallNonvirtualIntMethodAFP = functions.get(ValueLayout.ADDRESS, 648); //CallNonvirtualIntMethodA
+    final MemorySegment CallNonvirtualLongMethodFP = functions.get(ValueLayout.ADDRESS, 656); //CallNonvirtualLongMethod
+    final MemorySegment CallNonvirtualLongMethodVFP = functions.get(ValueLayout.ADDRESS, 664); //CallNonvirtualLongMethodV
+    final MemorySegment CallNonvirtualLongMethodAFP = functions.get(ValueLayout.ADDRESS, 672); //CallNonvirtualLongMethodA
+    final MemorySegment CallNonvirtualFloatMethodFP = functions.get(ValueLayout.ADDRESS, 680); //CallNonvirtualFloatMethod
+    final MemorySegment CallNonvirtualFloatMethodVFP = functions.get(ValueLayout.ADDRESS, 688); //CallNonvirtualFloatMethodV
+    final MemorySegment CallNonvirtualFloatMethodAFP = functions.get(ValueLayout.ADDRESS, 696); //CallNonvirtualFloatMethodA
+    final MemorySegment CallNonvirtualDoubleMethodFP = functions.get(ValueLayout.ADDRESS, 704); //CallNonvirtualDoubleMethod
+    final MemorySegment CallNonvirtualDoubleMethodVFP = functions.get(ValueLayout.ADDRESS, 712); //CallNonvirtualDoubleMethodV
+    final MemorySegment CallNonvirtualDoubleMethodAFP = functions.get(ValueLayout.ADDRESS, 720); //CallNonvirtualDoubleMethodA
+    final MemorySegment CallNonvirtualVoidMethodFP = functions.get(ValueLayout.ADDRESS, 728); //CallNonvirtualVoidMethod
+    final MemorySegment CallNonvirtualVoidMethodVFP = functions.get(ValueLayout.ADDRESS, 736); //CallNonvirtualVoidMethodV
+    final MemorySegment CallNonvirtualVoidMethodAFP = functions.get(ValueLayout.ADDRESS, 744); //CallNonvirtualVoidMethodA
+    final MemorySegment GetFieldIDFP = functions.get(ValueLayout.ADDRESS, 752); //GetFieldID
+    final MemorySegment GetObjectFieldFP = functions.get(ValueLayout.ADDRESS, 760); //GetObjectField
 
 
     static {
@@ -391,13 +404,13 @@ public class JniUtils {
                         ValueLayout.JAVA_LONG,
                         /*JNIEnv *env */ValueLayout.ADDRESS,
                         /*jobject obj*/ValueLayout.ADDRESS
-                )).bindTo(NewGlobalRefFP);
+                ));
         DeleteGlobalRefMH = Linker.nativeLinker()
                 .downcallHandle(FunctionDescriptor.of(
                         ValueLayout.JAVA_LONG,
                         /*JNIEnv *env */ValueLayout.ADDRESS,
                         /*jobject obj*/ValueLayout.ADDRESS
-                )).bindTo(DeleteGlobalRefFP);
+                ));
     }
 
 
@@ -407,8 +420,7 @@ public class JniUtils {
                         ValueLayout.JAVA_LONG,
                         /*JNIEnv *env */ValueLayout.ADDRESS,
                         /*const char *name*/ ValueLayout.ADDRESS
-                )).bindTo(FindClassFP);
-
+                ));
     }
 
 }
