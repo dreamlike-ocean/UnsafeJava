@@ -25,12 +25,6 @@
             <artifactId>byte-buddy</artifactId>
             <version>1.14.3</version>
         </dependency>
-
-        <dependency>
-            <groupId>net.fornwall</groupId>
-            <artifactId>jelf</artifactId>
-            <version>0.9.0</version>
-        </dependency>
     </dependencies>
     <build>
         <plugins>

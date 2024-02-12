@@ -21,67 +21,44 @@ public class Main {
     public static MethodHandles.Lookup IMPL_LOOKUP;
 
     public static void main(String[] args) throws Throwable {
-        List<String> allJniEnvFnName = Files.readAllLines(Path.of("t.txt"))
-                .stream()
-                .filter(Predicate.not(String::isBlank))
-                .map(s -> {
-                    int start = s.indexOf("JNICALL *");
-                    if (start == -1) {
-                        return null;
-                    }
-                    start += "JNICALL *".length();
-                    int end = s.indexOf(")", start);
-                    return s.substring(start, end);
-                })
-                .filter(Predicate.not(Objects::isNull))
-                //MemorySegment CallBooleanMethodFp = functions.get(ValueLayout.ADDRESS, ADDRESS_SIZE * i++);
-                .toList();
-        String fields = allJniEnvFnName.stream()
-                .map(s -> STR."final MemorySegment \{s}Fp;")
-                .collect(Collectors.joining("\n"));
-        String ctorInit = allJniEnvFnName.stream()
-                .map(s -> STR."\{s}Fp = functions.get(ValueLayout.ADDRESS, ADDRESS_SIZE * i++);")
-                .collect(Collectors.joining("\n"));
 
-        System.out.println(fields);
-        System.out.println(ctorInit);
 
-//        Arena tmp = Arena.global();
-//        Field field = MethodHandles.Lookup.class.getDeclaredField("IMPL_LOOKUP");
-//        field.setAccessible(true);
-//        Object o = field.get(null);
-//
-//
-//        JniUtils jniUtils = new JniUtils(tmp);
-//
-////        jniUtils.JVM_AddModuleExportsToAll_MH(MethodHandles.Lookup.class, tmp.allocateUtf8String("java.lang.invoke"));
-//
-//        long javaLangAccess = jniUtils.JNU_GetStaticFieldByName("jdk/internal/access/SharedSecrets", "javaLangAccess", "Ljdk/internal/access/JavaLangAccess;");
-//        javaLangAccess = jniUtils.NewGlobalRef(javaLangAccess);
-//
-//        MethodHandle addExport = Linker.nativeLinker()
-//                .downcallHandle(FunctionDescriptor.of(
-//                        ValueLayout.ADDRESS,
-//                        /*JNIEnv *env */ValueLayout.ADDRESS,
-//                        /*jboolean *hasException*/ValueLayout.ADDRESS,
-//                        /*  jobject obj **/ ValueLayout.ADDRESS,
-//                        /*const char *name*/ ValueLayout.ADDRESS,
-//                        /* const char *signature*/ ValueLayout.ADDRESS,
-//                        /* jobject Module*/ ValueLayout.ADDRESS,
-//                        /* jstring pkg*/ ValueLayout.ADDRESS
-//                )).bindTo(JniUtils.JNU_CallMethodByNameFP);
-//
-//        long utilsSystemClass = jniUtils.getSystemClass(MethodHandles.Lookup.class);
-//        long module = jniUtils.JNU_CallMethodByNameWithoutArg(utilsSystemClass, "getModule", "()Ljava/lang/Module;");
-//        module = jniUtils.NewGlobalRef(module);
-//
-//        long pkg = jniUtils.StringToJString(tmp.allocateUtf8String("java.lang.invoke"));
-//        pkg = jniUtils.NewGlobalRef(pkg);
-//        MemorySegment address = (MemorySegment) addExport.invokeExact(
-//                jniUtils.jniEnvPointer, MemorySegment.NULL, MemorySegment.ofAddress(javaLangAccess), tmp.allocateUtf8String("addOpensToAllUnnamed"),
-//                tmp.allocateUtf8String("(Ljava/lang/Module;Ljava/lang/String;)V"), MemorySegment.ofAddress(module), MemorySegment.ofAddress(pkg));
-//
-//        System.out.println(o);
+        Arena tmp = Arena.global();
+
+
+        JniUtils jniUtils = new JniUtils(tmp);
+
+//        jniUtils.JVM_AddModuleExportsToAll_MH(MethodHandles.Lookup.class, tmp.allocateUtf8String("java.lang.invoke"));
+
+        long javaLangAccess = jniUtils.JNU_GetStaticFieldByName("jdk/internal/access/SharedSecrets", "javaLangAccess", "Ljdk/internal/access/JavaLangAccess;");
+        javaLangAccess = jniUtils.NewGlobalRef(javaLangAccess);
+
+        MethodHandle addExport = Linker.nativeLinker()
+                .downcallHandle(FunctionDescriptor.of(
+                        ValueLayout.ADDRESS,
+                        /*JNIEnv *env */ValueLayout.ADDRESS,
+                        /*jboolean *hasException*/ValueLayout.ADDRESS,
+                        /*  jobject obj **/ ValueLayout.ADDRESS,
+                        /*const char *name*/ ValueLayout.ADDRESS,
+                        /* const char *signature*/ ValueLayout.ADDRESS,
+                        /* jobject Module*/ ValueLayout.ADDRESS,
+                        /* jstring pkg*/ ValueLayout.ADDRESS
+                )).bindTo(JniUtils.JNU_CallMethodByNameFP);
+
+        long utilsSystemClass = jniUtils.getSystemClass(MethodHandles.Lookup.class);
+        long module = jniUtils.JNU_CallMethodByNameWithoutArg(utilsSystemClass, "getModule", "()Ljava/lang/Module;");
+        module = jniUtils.NewGlobalRef(module);
+
+        long pkg = jniUtils.StringToJString(tmp.allocateUtf8String("java.lang.invoke"));
+        pkg = jniUtils.NewGlobalRef(pkg);
+        MemorySegment address = (MemorySegment) addExport.invokeExact(
+                jniUtils.jniEnvPointer, MemorySegment.NULL, MemorySegment.ofAddress(javaLangAccess), tmp.allocateUtf8String("addOpensToAllUnnamed"),
+                tmp.allocateUtf8String("(Ljava/lang/Module;Ljava/lang/String;)V"), MemorySegment.ofAddress(module), MemorySegment.ofAddress(pkg));
+        Field field = MethodHandles.Lookup.class.getDeclaredField("IMPL_LOOKUP");
+        field.setAccessible(true);
+        Object o = field.get(null);
+
+        System.out.println(o);
 
 
     }
