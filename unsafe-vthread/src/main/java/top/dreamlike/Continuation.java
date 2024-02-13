@@ -25,8 +25,6 @@ public class Continuation {
 
     private static final MethodHandle CONTINUATION_RUN_MH = initRunMH();
 
-
-
     public Continuation(Runnable runnable) {
         this(CONTINUATION_CONSTRUCTOR.apply(scope, runnable));
     }

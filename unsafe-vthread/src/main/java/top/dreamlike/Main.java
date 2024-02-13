@@ -1,18 +1,7 @@
 package top.dreamlike;
 
-import top.dreamlike.hack.JniUtils;
-
-import java.io.IOException;
-import java.lang.foreign.*;
-import java.lang.invoke.MethodHandle;
 import java.lang.invoke.MethodHandles;
-import java.lang.reflect.Field;
-import java.nio.file.Files;
-import java.nio.file.Path;
-import java.util.List;
-import java.util.Objects;
-import java.util.function.Predicate;
-import java.util.stream.Collectors;
+import java.util.concurrent.Executors;
 
 public class Main {
 
@@ -21,46 +10,12 @@ public class Main {
     public static MethodHandles.Lookup IMPL_LOOKUP;
 
     public static void main(String[] args) throws Throwable {
-
-
-        Arena tmp = Arena.global();
-
-
-        JniUtils jniUtils = new JniUtils(tmp);
-
-//        jniUtils.JVM_AddModuleExportsToAll_MH(MethodHandles.Lookup.class, tmp.allocateUtf8String("java.lang.invoke"));
-
-        long javaLangAccess = jniUtils.JNU_GetStaticFieldByName("jdk/internal/access/SharedSecrets", "javaLangAccess", "Ljdk/internal/access/JavaLangAccess;");
-        javaLangAccess = jniUtils.NewGlobalRef(javaLangAccess);
-
-        MethodHandle addExport = Linker.nativeLinker()
-                .downcallHandle(FunctionDescriptor.of(
-                        ValueLayout.ADDRESS,
-                        /*JNIEnv *env */ValueLayout.ADDRESS,
-                        /*jboolean *hasException*/ValueLayout.ADDRESS,
-                        /*  jobject obj **/ ValueLayout.ADDRESS,
-                        /*const char *name*/ ValueLayout.ADDRESS,
-                        /* const char *signature*/ ValueLayout.ADDRESS,
-                        /* jobject Module*/ ValueLayout.ADDRESS,
-                        /* jstring pkg*/ ValueLayout.ADDRESS
-                )).bindTo(JniUtils.JNU_CallMethodByNameFP);
-
-        long utilsSystemClass = jniUtils.getSystemClass(MethodHandles.Lookup.class);
-        long module = jniUtils.JNU_CallMethodByNameWithoutArg(utilsSystemClass, "getModule", "()Ljava/lang/Module;");
-        module = jniUtils.NewGlobalRef(module);
-
-        long pkg = jniUtils.StringToJString(tmp.allocateUtf8String("java.lang.invoke"));
-        pkg = jniUtils.NewGlobalRef(pkg);
-        MemorySegment address = (MemorySegment) addExport.invokeExact(
-                jniUtils.jniEnvPointer, MemorySegment.NULL, MemorySegment.ofAddress(javaLangAccess), tmp.allocateUtf8String("addOpensToAllUnnamed"),
-                tmp.allocateUtf8String("(Ljava/lang/Module;Ljava/lang/String;)V"), MemorySegment.ofAddress(module), MemorySegment.ofAddress(pkg));
-        Field field = MethodHandles.Lookup.class.getDeclaredField("IMPL_LOOKUP");
-        field.setAccessible(true);
-        Object o = field.get(null);
-
-        System.out.println(o);
-
-
+        Thread.Builder.OfVirtual virtual = VirtualThreadUnsafe.VIRTUAL_THREAD_BUILDER.apply(Executors.newSingleThreadExecutor(r ->
+                new Thread(r, "dreamlike-jni-hack-VirtualThread")
+        ));
+        virtual.start(() -> {
+            System.out.println(Thread.currentThread());
+        });
     }
 
 //

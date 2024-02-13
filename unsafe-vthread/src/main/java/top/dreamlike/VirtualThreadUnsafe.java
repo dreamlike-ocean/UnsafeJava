@@ -1,46 +1,43 @@
 package top.dreamlike;
 
-import sun.misc.Unsafe;
+import top.dreamlike.unsafe.JNIEnv;
+import top.dreamlike.unsafe.helper.GlobalRef;
+import top.dreamlike.unsafe.helper.JValue;
 
-import java.io.*;
+import java.lang.foreign.Arena;
 import java.lang.invoke.LambdaMetafactory;
 import java.lang.invoke.MethodHandle;
 import java.lang.invoke.MethodHandles;
 import java.lang.invoke.MethodType;
-import java.lang.reflect.Field;
 import java.util.concurrent.Executor;
-import java.util.concurrent.Executors;
 import java.util.function.Function;
 import java.util.function.Supplier;
 
-import static java.lang.StringTemplate.STR;
-
 public class VirtualThreadUnsafe {
     static {
-        loadSo("libvirtualThreadUnsafe.so");
+        try {
+            fetchUnsafeHandler();
+        } catch (Throwable e) {
+            throw new RuntimeException(e);
+        }
     }
-    public final static Unsafe UNSAFE = getUnsafe();
 
-    public final static MethodHandles.Lookup IMPL_LOOKUP = fetchUnsafeHandler();
+
+    public static MethodHandles.Lookup IMPL_LOOKUP;
 
     public final static Function<Executor, Thread.Builder.OfVirtual> VIRTUAL_THREAD_BUILDER = fetchVirtualThreadBuilder();
 
     private final static Supplier<Thread> CARRIERTHREAD_SUPPLIER = carrierThreadSupplier();
-    public static native Object getTrustedLookUp();
 
-    public static native long getMainA();
-
-    private static MethodHandles.Lookup fetchUnsafeHandler() {
-        return ((MethodHandles.Lookup) getTrustedLookUp());
-//        Class<MethodHandles.Lookup> lookupClass = MethodHandles.Lookup.class;
-//
-//        try {
-//            Field implLookupField = lookupClass.getDeclaredField("IMPL_LOOKUP");
-//            long offset = UNSAFE.staticFieldOffset(implLookupField);
-//            return (MethodHandles.Lookup) UNSAFE.getObject(UNSAFE.staticFieldBase(implLookupField), offset);
-//        } catch (Exception e) {
-//            throw new RuntimeException(e);
-//        }
+    private static void fetchUnsafeHandler() throws Throwable {
+        try(Arena arena = Arena.ofConfined()) {
+            JNIEnv jniEnv = new JNIEnv(arena);
+            var IMPL_LOOKUP = jniEnv.GetStaticFieldByName(MethodHandles.Lookup.class.getDeclaredField("IMPL_LOOKUP")).toPtr();
+            GlobalRef ref = new GlobalRef(jniEnv, IMPL_LOOKUP);
+            try(ref) {
+                jniEnv.SetStaticFieldByName(VirtualThreadUnsafe.class.getDeclaredField("IMPL_LOOKUP"), new JValue(ref.ref().address()));
+            }
+        }
     }
 
     private static Function<Executor, Thread.Builder.OfVirtual> fetchVirtualThreadBuilder() {
@@ -61,18 +58,6 @@ public class VirtualThreadUnsafe {
         } catch (Throwable e) {
             throw new RuntimeException(e);
         }
-    }
-
-    private static Unsafe getUnsafe() {
-        Class<Unsafe> aClass = Unsafe.class;
-        try {
-            Field unsafe = aClass.getDeclaredField("theUnsafe");
-            unsafe.setAccessible(true);
-            return ((Unsafe) unsafe.get(null));
-        } catch (Exception e) {
-            throw new RuntimeException(e);
-        }
-
     }
 
     private static Supplier<Thread> carrierThreadSupplier() {
@@ -100,24 +85,4 @@ public class VirtualThreadUnsafe {
         return thread.isVirtual() ? CARRIERTHREAD_SUPPLIER.get() : thread;
     }
 
-
-
-    public static void loadSo(String fileName) {
-        try {
-            InputStream is = VirtualThreadUnsafe.class.getResourceAsStream(STR."/\{fileName}");
-            File file = File.createTempFile(fileName, ".so");
-            OutputStream os = new FileOutputStream(file);
-            byte[] buffer = new byte[1024];
-            int length;
-            while ((length = is.read(buffer)) != -1) {
-                os.write(buffer, 0, length);
-            }
-            is.close();
-            os.close();
-            System.load(file.getAbsolutePath());
-            file.deleteOnExit();
-        } catch (IOException e) {
-            throw new RuntimeException(e);
-        }
-    }
 }

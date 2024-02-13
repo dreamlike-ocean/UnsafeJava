@@ -1,15 +1,31 @@
 package top.dreamlike.unsafe.helper;
 
+import java.util.concurrent.Callable;
+
 public class NativeHelper {
 
     @FunctionalInterface
-    public interface ThrowableSupplier<T> {
+    public interface VoidThrowableFn {
+        void get() throws Throwable;
+    }
+
+    @FunctionalInterface
+    public interface ThrowableFn<T> {
         T get() throws Throwable;
     }
 
-    public static <T> T throwable(ThrowableSupplier<T> supplier) {
+
+    public static <T> T throwable(ThrowableFn<T> supplier) {
         try {
             return supplier.get();
+        }catch (Throwable t) {
+            throw new RuntimeException(t);
+        }
+    }
+
+    public static void throwable(VoidThrowableFn r) {
+        try {
+           r.get();
         }catch (Throwable t) {
             throw new RuntimeException(t);
         }
