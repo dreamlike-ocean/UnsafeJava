@@ -27,7 +27,7 @@ IMPL_LOOKUP这个是无视各种权限的lookup，从它这里获取到的Method
 为了应对未来的Unsafe中的某些内存操作被移除的问题，在[寒老板](https://github.com/IceSoulHanxi)的一次群聊中提到了几个java动态库导出的符号，我们逆向了这些符号以及正向参考了openjdk源码，[使用Panama API封装了大部分的JNI操作](https://github.com/dreamlike-ocean/backend_qingyou/blob/main/dreamlike%E7%9A%84%E7%A7%81%E8%B4%A7/afterUnsafe.md),使得可以绕开模块化之类的限制让我们继续可以hack标准库，继续能拿到IMPL_LOOKUP字段
 
 > [!WARNING]
-> 目前只在Linux x86_64上测试过，其他平台可能需要评估兼容性问题
+> 目前只在Linux以及Windows x86_64上测试过，其他平台可能需要评估兼容性问题
 
 
 当然你也会发现项目里面有另外一种写法，即获取到MethodHandle之后转换为`java.util.function.Function`，这两种形式核心原理是一样的

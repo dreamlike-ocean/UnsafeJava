@@ -4,10 +4,14 @@ import top.dreamlike.unsafe.helper.GlobalRef;
 import top.dreamlike.unsafe.helper.JValue;
 import top.dreamlike.unsafe.helper.NativeHelper;
 
+import java.io.File;
 import java.lang.foreign.*;
 import java.lang.invoke.MethodHandle;
 import java.lang.reflect.*;
+import java.nio.file.Files;
+import java.nio.file.Path;
 import java.util.Arrays;
+import java.util.logging.Filter;
 import java.util.stream.Collectors;
 
 import static java.lang.StringTemplate.STR;
@@ -548,7 +552,11 @@ public class JNIEnv {
         }
         //根据当前系统判断使用哪个后缀名
         String libName = System.mapLibraryName("jvm");
+
         String jvmPath = STR."\{javaHomePath}/lib/server/\{libName}";
+        if (!Files.exists(Path.of(STR."\{javaHomePath}/lib/server/\{libName}"))) {
+            jvmPath = STR."\{javaHomePath}/bin/server/\{libName}";
+        }
         Runtime.getRuntime().load(jvmPath);
         MemorySegment jniGetCreatedJavaVM_FP = SymbolLookup.loaderLookup()
                 .find("JNI_GetCreatedJavaVMs")
