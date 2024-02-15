@@ -7,7 +7,7 @@ import java.lang.invoke.VarHandle;
 
 public class JValue {
 
-    private final long nativeJvalue;
+    final long nativeJvalue;
 
     private final MemorySegment heapSegment;
 
@@ -69,15 +69,15 @@ public class JValue {
             ValueLayout.ADDRESS.withName("l")
     );
 
-    private static final VarHandle jbooleanVarhandle = jvalueLayout.varHandle(MemoryLayout.PathElement.groupElement("z"));
-    private static final VarHandle jbyteVarhandle = jvalueLayout.varHandle(MemoryLayout.PathElement.groupElement("b"));
-    private static final VarHandle jcharVarhandle = jvalueLayout.varHandle(MemoryLayout.PathElement.groupElement("c"));
-    private static final VarHandle jshortVarhandle = jvalueLayout.varHandle(MemoryLayout.PathElement.groupElement("s"));
-    private static final VarHandle jintVarhandle = jvalueLayout.varHandle(MemoryLayout.PathElement.groupElement("i"));
-    private static final VarHandle jlongVarhandle = jvalueLayout.varHandle(MemoryLayout.PathElement.groupElement("j"));
-    private static final VarHandle jfloatVarhandle = jvalueLayout.varHandle(MemoryLayout.PathElement.groupElement("f"));
-    private static final VarHandle jdoubleVarhandle = jvalueLayout.varHandle(MemoryLayout.PathElement.groupElement("d"));
-    private static final VarHandle jobjectVarhandle = jvalueLayout.varHandle(MemoryLayout.PathElement.groupElement("l"));
+    public static final VarHandle jbooleanVarhandle = jvalueLayout.varHandle(MemoryLayout.PathElement.groupElement("z"));
+    public static final VarHandle jbyteVarhandle = jvalueLayout.varHandle(MemoryLayout.PathElement.groupElement("b"));
+    public static final VarHandle jcharVarhandle = jvalueLayout.varHandle(MemoryLayout.PathElement.groupElement("c"));
+    public static final VarHandle jshortVarhandle = jvalueLayout.varHandle(MemoryLayout.PathElement.groupElement("s"));
+    public static final VarHandle jintVarhandle = jvalueLayout.varHandle(MemoryLayout.PathElement.groupElement("i"));
+    public static final VarHandle jlongVarhandle = jvalueLayout.varHandle(MemoryLayout.PathElement.groupElement("j"));
+    public static final VarHandle jfloatVarhandle = jvalueLayout.varHandle(MemoryLayout.PathElement.groupElement("f"));
+    public static final VarHandle jdoubleVarhandle = jvalueLayout.varHandle(MemoryLayout.PathElement.groupElement("d"));
+    public static final VarHandle jobjectVarhandle = jvalueLayout.varHandle(MemoryLayout.PathElement.groupElement("l"));
 
 
 }
