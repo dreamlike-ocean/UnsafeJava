@@ -1,15 +1,12 @@
-package top.dreamlike.unsafe;
-
-import top.dreamlike.unsafe.helper.JValue;
+package top.dreamlike.unsafe.jni;
 
 import java.lang.foreign.FunctionDescriptor;
 import java.lang.foreign.Linker;
-import java.lang.foreign.MemoryLayout;
 import java.lang.foreign.ValueLayout;
 import java.lang.invoke.MethodHandle;
 
-import static top.dreamlike.unsafe.JNIEnv.CallMethodByNameFp;
-import static top.dreamlike.unsafe.JNIEnv.CallStaticMethodByNameFp;
+import static top.dreamlike.unsafe.jni.JNIEnv.CallMethodByNameFp;
+import static top.dreamlike.unsafe.jni.JNIEnv.CallStaticMethodByNameFp;
 
 class JNIEnvExt {
 
@@ -23,7 +20,7 @@ class JNIEnvExt {
                     /* const char *signature*/ ValueLayout.ADDRESS,
                     /* jvalue *args*/ ValueLayout.ADDRESS
             )).bindTo(CallMethodByNameFp);
-    // Class<?> name = Class.forName("top.dreamlike.unsafe.JNIEnv", true, loader);
+    // Class<?> name = Class.forName("top.dreamlike.unsafe.jni.JNIEnv", true, loader);
     static final MethodHandle ClassLoaderForNameMH = Linker.nativeLinker()
             .downcallHandle(FunctionDescriptor.of(
                     ValueLayout.ADDRESS,

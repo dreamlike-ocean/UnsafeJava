@@ -1,4 +1,4 @@
-package top.dreamlike.unsafe;
+package top.dreamlike.unsafe.jni;
 
 import top.dreamlike.unsafe.helper.GlobalRef;
 import top.dreamlike.unsafe.helper.JValue;
@@ -8,11 +8,10 @@ import java.lang.foreign.*;
 import java.lang.invoke.MethodHandle;
 import java.lang.reflect.*;
 import java.util.Arrays;
-import java.util.Objects;
 import java.util.stream.Collectors;
 
 import static java.lang.StringTemplate.STR;
-import static top.dreamlike.unsafe.JNIEnvFunctions.*;
+import static top.dreamlike.unsafe.jni.JNIEnvFunctions.*;
 import static top.dreamlike.unsafe.helper.NativeHelper.throwable;
 
 public class JNIEnv {
@@ -112,7 +111,7 @@ public class JNIEnv {
     private final SegmentAllocator allocator;
     private final MemorySegment jniEnvPointer;
 
-    private final JNIEnvFunctions functions;
+    public final JNIEnvFunctions functions;
 
 
     public JNIEnv(SegmentAllocator allocator) {
@@ -152,7 +151,7 @@ public class JNIEnv {
                  GlobalRef classLoaderJobjectRef = CallMethodByName(Thread.class.getMethod("getContextClassLoader"), threadRef.ref());
                  GlobalRef classNameRef = new GlobalRef(this, cstrToJstring((allocator.allocateUtf8String(c.getName()))))
             ) {
-//                Class<?> name = Class.forName("top.dreamlike.unsafe.JNIEnv", true, loader);
+//                Class<?> name = Class.forName("top.dreamlike.unsafe.jni.JNIEnv", true, loader);
                 return (MemorySegment) JNIEnvExt.ClassLoaderForNameMH.invokeExact(
                         jniEnvPointer,
                         MemorySegment.NULL,
@@ -168,65 +167,50 @@ public class JNIEnv {
     }
 
 
-    public JValue GetStaticFieldByName(Field field) {
+    public GlobalRef GetStaticFieldByName(Field field) {
         if (!Modifier.isStatic(field.getModifiers())) {
             throw new IllegalArgumentException("only support static field");
         }
-
-        Class<?> aClass = field.getDeclaringClass();
-        String className = aClass.getName().replace(".", "/");
-        String signature = NativeHelper.classToSig(field.getType());
-        boolean isSystemLoader = aClass.getClassLoader() == null;
-        if (isSystemLoader) {
-            long value = throwable(() -> (long) GetStaticFieldByName.invokeExact(
-                    jniEnvPointer,
-                    MemorySegment.NULL,
-                    allocator.allocateUtf8String(className),
-                    allocator.allocateUtf8String(field.getName()),
-                    allocator.allocateUtf8String(signature)
-            ));
-            return new JValue(value);
-        }
-
-        return GetStaticFieldByNameForOtherClassloader(field);
-    }
-
-    private JValue GetStaticFieldByNameForOtherClassloader(Field field) {
         return throwable(() -> {
-            var clsRef = FindClass(field.getDeclaringClass());
-            var fidRef = (MemorySegment) GetStaticFieldID_MH.invokeExact(
-                    functions.GetStaticFieldIDFp,
-                    jniEnvPointer,
-                    clsRef,
-                    allocator.allocateUtf8String(field.getName()),
-                    allocator.allocateUtf8String(NativeHelper.classToSig(field.getType()))
-            );
-            long value = switch (field.getType().getName()) {
-                case "boolean" ->
-                        (long) GetStaticBooleanField_MH.invokeExact(functions.GetStaticBooleanFieldFp, jniEnvPointer, clsRef, fidRef);
-                case "byte" ->
-                        (long) GetStaticByteField_MH.invokeExact(functions.GetStaticByteFieldFp, jniEnvPointer, clsRef, fidRef);
-                case "char" ->
-                        (long) GetStaticCharField_MH.invokeExact(functions.GetStaticCharFieldFp, jniEnvPointer, clsRef, fidRef);
-                case "short" ->
-                        (long) GetStaticShortField_MH.invokeExact(functions.GetStaticShortFieldFp, jniEnvPointer, clsRef, fidRef);
-                case "int" ->
-                        (long) GetStaticIntField_MH.invokeExact(functions.GetStaticIntFieldFp, jniEnvPointer, clsRef, fidRef);
-                case "long" ->
-                        (long) GetStaticLongField_MH.invokeExact(functions.GetStaticLongFieldFp, jniEnvPointer, clsRef, fidRef);
-                case "float" ->
-                        (long) GetStaticFloatField_MH.invokeExact(functions.GetStaticFloatFieldFp, jniEnvPointer, clsRef, fidRef);
-                case "double" ->
-                        (long) GetStaticDoubleField_MH.invokeExact(functions.GetStaticDoubleFieldFp, jniEnvPointer, clsRef, fidRef);
-                default ->
-                        (long) GetStaticObjectField_MH.invokeExact(functions.GetStaticObjectFieldFp, jniEnvPointer, clsRef, fidRef);
-            };
-            return new JValue(value);
 
+            try(var clsRef = new GlobalRef(this, FindClass(field.getDeclaringClass()))){
+                var fidRef = (MemorySegment) GetStaticFieldID_MH.invokeExact(
+                        functions.GetStaticFieldIDFp,
+                        jniEnvPointer,
+                        clsRef.ref(),
+                        allocator.allocateUtf8String(field.getName()),
+                        allocator.allocateUtf8String(NativeHelper.classToSig(field.getType()))
+                );
+                boolean isRef = false;
+                long value = switch (field.getType().getName()) {
+                    case "boolean" ->
+                            (long) GetStaticBooleanField_MH.invokeExact(functions.GetStaticBooleanFieldFp, jniEnvPointer, clsRef.ref(), fidRef);
+                    case "byte" ->
+                            (long) GetStaticByteField_MH.invokeExact(functions.GetStaticByteFieldFp, jniEnvPointer, clsRef.ref(), fidRef);
+                    case "char" ->
+                            (long) GetStaticCharField_MH.invokeExact(functions.GetStaticCharFieldFp, jniEnvPointer, clsRef.ref(), fidRef);
+                    case "short" ->
+                            (long) GetStaticShortField_MH.invokeExact(functions.GetStaticShortFieldFp, jniEnvPointer, clsRef.ref(), fidRef);
+                    case "int" ->
+                            (long) GetStaticIntField_MH.invokeExact(functions.GetStaticIntFieldFp, jniEnvPointer, clsRef.ref(), fidRef);
+                    case "long" ->
+                            (long) GetStaticLongField_MH.invokeExact(functions.GetStaticLongFieldFp, jniEnvPointer, clsRef.ref(), fidRef);
+                    case "float" ->
+                            (long) GetStaticFloatField_MH.invokeExact(functions.GetStaticFloatFieldFp, jniEnvPointer, clsRef.ref(), fidRef);
+                    case "double" ->
+                            (long) GetStaticDoubleField_MH.invokeExact(functions.GetStaticDoubleFieldFp, jniEnvPointer, clsRef.ref(), fidRef);
+                    default ->{
+                        isRef = true;
+                        yield (long) GetStaticObjectField_MH.invokeExact(functions.GetStaticObjectFieldFp, jniEnvPointer, clsRef.ref(), fidRef);
+                    }
+
+                };
+                return isRef ? new GlobalRef(this, MemorySegment.ofAddress(value)) : new GlobalRef(this, new JValue(value));
+            }
         });
     }
 
-    public void SetStaticFieldByName(Field field, JValue value) {
+    public void SetStaticFieldByName(Field field, GlobalRef value) {
         if (!Modifier.isStatic(field.getModifiers())) {
             throw new IllegalArgumentException("only support static field");
         }
@@ -242,27 +226,106 @@ public class JNIEnv {
             );
             switch (field.getType().getName()) {
                 case "boolean" ->
-                        SetStaticBooleanField_MH.invokeExact(functions.SetStaticBooleanFieldFp, jniEnvPointer, clsRef, fidRef, value.getBoolean());
+                        SetStaticBooleanField_MH.invokeExact(functions.SetStaticBooleanFieldFp, jniEnvPointer, clsRef, fidRef, value.jValue.getBoolean());
                 case "byte" ->
-                        SetStaticByteField_MH.invokeExact(functions.SetStaticByteFieldFp, jniEnvPointer, clsRef, fidRef, value.getByte());
+                        SetStaticByteField_MH.invokeExact(functions.SetStaticByteFieldFp, jniEnvPointer, clsRef, fidRef, value.jValue.getByte());
                 case "char" ->
-                        SetStaticCharField_MH.invokeExact(functions.SetStaticCharFieldFp, jniEnvPointer, clsRef, fidRef, value.getChar());
+                        SetStaticCharField_MH.invokeExact(functions.SetStaticCharFieldFp, jniEnvPointer, clsRef, fidRef, value.jValue.getChar());
                 case "short" ->
-                        SetStaticShortField_MH.invokeExact(functions.SetStaticShortFieldFp, jniEnvPointer, clsRef, fidRef, value.getShort());
+                        SetStaticShortField_MH.invokeExact(functions.SetStaticShortFieldFp, jniEnvPointer, clsRef, fidRef, value.jValue.getShort());
                 case "int" ->
-                        SetStaticIntField_MH.invokeExact(functions.SetStaticIntFieldFp, jniEnvPointer, clsRef, fidRef, value.getInt());
+                        SetStaticIntField_MH.invokeExact(functions.SetStaticIntFieldFp, jniEnvPointer, clsRef, fidRef, value.jValue.getInt());
                 case "long" ->
-                        SetStaticLongField_MH.invokeExact(functions.SetStaticLongFieldFp, jniEnvPointer, clsRef, fidRef, value.getLong());
+                        SetStaticLongField_MH.invokeExact(functions.SetStaticLongFieldFp, jniEnvPointer, clsRef, fidRef, value.jValue.getLong());
                 case "float" ->
-                        SetStaticFloatField_MH.invokeExact(functions.SetStaticFloatFieldFp, jniEnvPointer, clsRef, fidRef, value.getFloat());
+                        SetStaticFloatField_MH.invokeExact(functions.SetStaticFloatFieldFp, jniEnvPointer, clsRef, fidRef, value.jValue.getFloat());
                 case "double" ->
-                        SetStaticDoubleField_MH.invokeExact(functions.SetStaticDoubleFieldFp, jniEnvPointer, clsRef, fidRef, value.getDouble());
+                        SetStaticDoubleField_MH.invokeExact(functions.SetStaticDoubleFieldFp, jniEnvPointer, clsRef, fidRef, value.jValue.getDouble());
                 default ->
-                        SetStaticObjectField_MH.invokeExact(functions.SetStaticObjectFieldFp, jniEnvPointer, clsRef, fidRef, value.toPtr());
+                        SetStaticObjectField_MH.invokeExact(functions.SetStaticObjectFieldFp, jniEnvPointer, clsRef, fidRef, value.ref());
             }
         });
-
     }
+
+    public GlobalRef GetFieldByName(Field field, GlobalRef jobject) {
+        if (Modifier.isStatic(field.getModifiers())) {
+            throw new IllegalArgumentException("only support not static field");
+        }
+        return throwable(() -> {
+            try(var clsRef = new GlobalRef(this, FindClass(field.getDeclaringClass()))){
+                var fidRef = (MemorySegment) GetFieldId.invokeExact(
+                        functions.GetFieldIDFp,
+                        jniEnvPointer,
+                        clsRef.ref(),
+                        allocator.allocateUtf8String(field.getName()),
+                        allocator.allocateUtf8String(NativeHelper.classToSig(field.getType()))
+                );
+                boolean isRef = false;
+                long value = switch (field.getType().getName()) {
+                    case "boolean" ->
+                            (long) GetBooleanField.invokeExact(functions.GetBooleanFieldFp, jniEnvPointer, jobject.ref(), fidRef);
+                    case "byte" ->
+                            (long) GetByteField.invokeExact(functions.GetByteFieldFp, jniEnvPointer, jobject.ref(), fidRef);
+                    case "char" ->
+                            (long) GetCharField.invokeExact(functions.GetCharFieldFp, jniEnvPointer, jobject.ref(), fidRef);
+                    case "short" ->
+                            (long) GetShortField.invokeExact(functions.GetShortFieldFp, jniEnvPointer, jobject.ref(), fidRef);
+                    case "int" ->
+                            (long) GetIntField.invokeExact(functions.GetIntFieldFp, jniEnvPointer, jobject.ref(), fidRef);
+                    case "long" ->
+                            (long) GetLongField.invokeExact(functions.GetLongFieldFp, jniEnvPointer, jobject.ref(), fidRef);
+                    case "float" ->
+                            (long) GetFloatField.invokeExact(functions.GetFloatFieldFp, jniEnvPointer, jobject.ref(), fidRef);
+                    case "double" ->
+                            (long) GetDoubleField.invokeExact(functions.GetDoubleFieldFp, jniEnvPointer, jobject.ref(), fidRef);
+                    default ->{
+                        isRef = true;
+                        yield (long) GetObjectField.invokeExact(functions.GetObjectFieldFp, jniEnvPointer, jobject.ref(), fidRef);
+                    }
+
+                };
+                return isRef ? new GlobalRef(this, MemorySegment.ofAddress(value)) : new GlobalRef(this, new JValue(value));
+            }
+        });
+    }
+
+    public void SetFieldByName(Field field, GlobalRef target, GlobalRef fieldValue) {
+        if (Modifier.isStatic(field.getModifiers())) {
+            throw new IllegalArgumentException("only support not static field");
+        }
+        throwable(() -> {
+            try (var clsRef = new GlobalRef(this, FindClass(field.getDeclaringClass()))) {
+                var fidRef = (MemorySegment) GetFieldId.invokeExact(
+                        functions.GetFieldIDFp,
+                        jniEnvPointer,
+                        clsRef.ref(),
+                        allocator.allocateUtf8String(field.getName()),
+                        allocator.allocateUtf8String(NativeHelper.classToSig(field.getType()))
+                );
+                switch (field.getType().getName()) {
+                    case "boolean" ->
+                            SetBooleanField.invokeExact(functions.SetBooleanFieldFp, jniEnvPointer, target.ref(), fidRef, fieldValue.jValue.getBoolean());
+                    case "byte" ->
+                            SetByteField.invokeExact(functions.SetByteFieldFp, jniEnvPointer, target.ref(), fidRef, fieldValue.jValue.getByte());
+                    case "char" ->
+                            SetCharField.invokeExact(functions.SetCharFieldFp, jniEnvPointer, target.ref(), fidRef, fieldValue.jValue.getChar());
+                    case "short" ->
+                            SetShortField.invokeExact(functions.SetShortFieldFp, jniEnvPointer, target.ref(), fidRef, fieldValue.jValue.getShort());
+                    case "int" ->
+                            SetIntField.invokeExact(functions.SetIntFieldFp, jniEnvPointer, target.ref(), fidRef, fieldValue.jValue.getInt());
+                    case "long" ->
+                            SetLongField.invokeExact(functions.SetLongFieldFp, jniEnvPointer, target.ref(), fidRef, fieldValue.jValue.getLong());
+                    case "float" ->
+                            SetFloatField.invokeExact(functions.SetFloatFieldFp, jniEnvPointer, target.ref(), fidRef, fieldValue.jValue.getFloat());
+                    case "double" ->
+                            SetDoubleField.invokeExact(functions.SetDoubleFieldFp, jniEnvPointer, target.ref(), fidRef, fieldValue.jValue.getDouble());
+                    default ->
+                            SetObjectField.invokeExact(functions.SetObjectFieldFp, jniEnvPointer, target.ref(), fidRef, fieldValue.ref());
+                }
+            }
+        });
+    }
+
 
     public MemorySegment ToString(MemorySegment jobject) {
         return throwable(() -> (MemorySegment) ToStringMh.invokeExact(jniEnvPointer, jobject));
@@ -421,7 +484,18 @@ public class JNIEnv {
     public Object jObjectToJavaObject(MemorySegment jobject) {
         return throwable(() -> {
             CallStaticMethodByName(JNIEnv.class.getDeclaredMethod("setSecret", Object.class), new JValue(jobject.address()));
-            return jniToJava.get();
+            var res = jniToJava.get();
+            jniToJava.remove();
+            return res;
+        });
+    }
+
+    public GlobalRef JavaObjectToJObject(Object o) {
+        return throwable(() -> {
+            setSecret(o);
+            GlobalRef ref = CallStaticMethodByName(JNIEnv.class.getDeclaredMethod("getSecret"));
+            jniToJava.remove();
+            return ref;
         });
     }
 
@@ -460,6 +534,10 @@ public class JNIEnv {
 
     private static void setSecret(Object o) {
         jniToJava.set(o);
+    }
+
+    private static Object getSecret() {
+        return jniToJava.get();
     }
 
     private static MemorySegment initMainVM() throws Throwable {

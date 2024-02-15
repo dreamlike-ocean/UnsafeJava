@@ -1,4 +1,4 @@
-package top.dreamlike.unsafe;
+package top.dreamlike.unsafe.jni;
 
 import java.lang.foreign.FunctionDescriptor;
 import java.lang.foreign.Linker;
@@ -6,7 +6,7 @@ import java.lang.foreign.MemorySegment;
 import java.lang.foreign.ValueLayout;
 import java.lang.invoke.MethodHandle;
 
-class JNIEnvFunctions {
+public class JNIEnvFunctions {
     final MemorySegment jniEnvPointer;
 
     private static final long ADDRESS_SIZE = ValueLayout.ADDRESS.byteSize();
@@ -342,6 +342,140 @@ class JNIEnvFunctions {
             /*jclass clazz*/ ValueLayout.ADDRESS,
             /*jmethodID methodID*/ ValueLayout.ADDRESS,
             /*jvalue *args*/ ValueLayout.ADDRESS
+    ));
+
+    final static MethodHandle GetFieldId = Linker.nativeLinker().downcallHandle(FunctionDescriptor.of(
+            ValueLayout.ADDRESS,
+            /*JNIEnv *env */ ValueLayout.ADDRESS,
+            /*jclass clazz*/ ValueLayout.ADDRESS,
+            /*const char *name*/ ValueLayout.ADDRESS,
+            /*const char *sig*/ ValueLayout.ADDRESS
+    ));
+
+final static MethodHandle GetObjectField = Linker.nativeLinker().downcallHandle(FunctionDescriptor.of(
+            ValueLayout.JAVA_LONG,
+            /*JNIEnv *env */ ValueLayout.ADDRESS,
+            /*jobject obj*/ ValueLayout.ADDRESS,
+            /*jfieldID fieldID*/ ValueLayout.ADDRESS
+    ));
+
+    final static MethodHandle GetBooleanField = Linker.nativeLinker().downcallHandle(FunctionDescriptor.of(
+            ValueLayout.JAVA_LONG,
+            /*JNIEnv *env */ ValueLayout.ADDRESS,
+            /*jobject obj*/ ValueLayout.ADDRESS,
+            /*jfieldID fieldID*/ ValueLayout.ADDRESS
+    ));
+
+    final static MethodHandle GetByteField = Linker.nativeLinker().downcallHandle(FunctionDescriptor.of(
+            ValueLayout.JAVA_LONG,
+            /*JNIEnv *env */ ValueLayout.ADDRESS,
+            /*jobject obj*/ ValueLayout.ADDRESS,
+            /*jfieldID fieldID*/ ValueLayout.ADDRESS
+    ));
+
+    final static MethodHandle GetCharField = Linker.nativeLinker().downcallHandle(FunctionDescriptor.of(
+            ValueLayout.JAVA_LONG,
+            /*JNIEnv *env */ ValueLayout.ADDRESS,
+            /*jobject obj*/ ValueLayout.ADDRESS,
+            /*jfieldID fieldID*/ ValueLayout.ADDRESS
+    ));
+
+    final static MethodHandle GetShortField = Linker.nativeLinker().downcallHandle(FunctionDescriptor.of(
+            ValueLayout.JAVA_LONG,
+            /*JNIEnv *env */ ValueLayout.ADDRESS,
+            /*jobject obj*/ ValueLayout.ADDRESS,
+            /*jfieldID fieldID*/ ValueLayout.ADDRESS
+    ));
+
+    final static MethodHandle GetIntField = Linker.nativeLinker().downcallHandle(FunctionDescriptor.of(
+            ValueLayout.JAVA_LONG,
+            /*JNIEnv *env */ ValueLayout.ADDRESS,
+            /*jobject obj*/ ValueLayout.ADDRESS,
+            /*jfieldID fieldID*/ ValueLayout.ADDRESS
+    ));
+
+    final static MethodHandle GetLongField = Linker.nativeLinker().downcallHandle(FunctionDescriptor.of(
+            ValueLayout.JAVA_LONG,
+            /*JNIEnv *env */ ValueLayout.ADDRESS,
+            /*jobject obj*/ ValueLayout.ADDRESS,
+            /*jfieldID fieldID*/ ValueLayout.ADDRESS
+    ));
+
+    final static MethodHandle GetFloatField = Linker.nativeLinker().downcallHandle(FunctionDescriptor.of(
+            ValueLayout.JAVA_LONG,
+            /*JNIEnv *env */ ValueLayout.ADDRESS,
+            /*jobject obj*/ ValueLayout.ADDRESS,
+            /*jfieldID fieldID*/ ValueLayout.ADDRESS
+    ));
+
+    final static MethodHandle GetDoubleField = Linker.nativeLinker().downcallHandle(FunctionDescriptor.of(
+            ValueLayout.JAVA_LONG,
+            /*JNIEnv *env */ ValueLayout.ADDRESS,
+            /*jobject obj*/ ValueLayout.ADDRESS,
+            /*jfieldID fieldID*/ ValueLayout.ADDRESS
+    ));
+
+    final static MethodHandle SetObjectField = Linker.nativeLinker().downcallHandle(FunctionDescriptor.ofVoid(
+            /*JNIEnv *env */ ValueLayout.ADDRESS,
+            /*jobject obj*/ ValueLayout.ADDRESS,
+            /*jfieldID fieldID*/ ValueLayout.ADDRESS,
+            /*jobject value*/ ValueLayout.ADDRESS
+    ));
+
+    final static MethodHandle SetBooleanField = Linker.nativeLinker().downcallHandle(FunctionDescriptor.ofVoid(
+            /*JNIEnv *env */ ValueLayout.ADDRESS,
+            /*jobject obj*/ ValueLayout.ADDRESS,
+            /*jfieldID fieldID*/ ValueLayout.ADDRESS,
+            /*jboolean value*/ ValueLayout.JAVA_BOOLEAN
+    ));
+
+    final static MethodHandle SetByteField = Linker.nativeLinker().downcallHandle(FunctionDescriptor.ofVoid(
+            /*JNIEnv *env */ ValueLayout.ADDRESS,
+            /*jobject obj*/ ValueLayout.ADDRESS,
+            /*jfieldID fieldID*/ ValueLayout.ADDRESS,
+            /*jbyte value*/ ValueLayout.JAVA_BYTE
+    ));
+
+    final static MethodHandle SetCharField = Linker.nativeLinker().downcallHandle(FunctionDescriptor.ofVoid(
+            /*JNIEnv *env */ ValueLayout.ADDRESS,
+            /*jobject obj*/ ValueLayout.ADDRESS,
+            /*jfieldID fieldID*/ ValueLayout.ADDRESS,
+            /*jchar value*/ ValueLayout.JAVA_CHAR
+    ));
+
+    final static MethodHandle SetShortField = Linker.nativeLinker().downcallHandle(FunctionDescriptor.ofVoid(
+            /*JNIEnv *env */ ValueLayout.ADDRESS,
+            /*jobject obj*/ ValueLayout.ADDRESS,
+            /*jfieldID fieldID*/ ValueLayout.ADDRESS,
+            /*jshort value*/ ValueLayout.JAVA_SHORT
+    ));
+
+    final static MethodHandle SetIntField = Linker.nativeLinker().downcallHandle(FunctionDescriptor.ofVoid(
+            /*JNIEnv *env */ ValueLayout.ADDRESS,
+            /*jobject obj*/ ValueLayout.ADDRESS,
+            /*jfieldID fieldID*/ ValueLayout.ADDRESS,
+            /*jint value*/ ValueLayout.JAVA_INT
+    ));
+
+    final static MethodHandle SetLongField = Linker.nativeLinker().downcallHandle(FunctionDescriptor.ofVoid(
+            /*JNIEnv *env */ ValueLayout.ADDRESS,
+            /*jobject obj*/ ValueLayout.ADDRESS,
+            /*jfieldID fieldID*/ ValueLayout.ADDRESS,
+            /*jlong value*/ ValueLayout.JAVA_LONG
+    ));
+
+    final static MethodHandle SetFloatField = Linker.nativeLinker().downcallHandle(FunctionDescriptor.ofVoid(
+            /*JNIEnv *env */ ValueLayout.ADDRESS,
+            /*jobject obj*/ ValueLayout.ADDRESS,
+            /*jfieldID fieldID*/ ValueLayout.ADDRESS,
+            /*jfloat value*/ ValueLayout.JAVA_FLOAT
+    ));
+
+    final static MethodHandle SetDoubleField = Linker.nativeLinker().downcallHandle(FunctionDescriptor.ofVoid(
+            /*JNIEnv *env */ ValueLayout.ADDRESS,
+            /*jobject obj*/ ValueLayout.ADDRESS,
+            /*jfieldID fieldID*/ ValueLayout.ADDRESS,
+            /*jdouble value*/ ValueLayout.JAVA_DOUBLE
     ));
 
     JNIEnvFunctions(MemorySegment jniEnvPointer) {

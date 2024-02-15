@@ -1,20 +1,15 @@
 import org.junit.Assert;
 import org.junit.Test;
-import top.dreamlike.unsafe.JNIEnv;
+import top.dreamlike.unsafe.jni.JNIEnv;
 import top.dreamlike.unsafe.helper.GlobalRef;
 import top.dreamlike.unsafe.helper.JValue;
-import top.dreamlike.unsafe.helper.NativeHelper;
 
 import java.lang.foreign.Arena;
 import java.lang.foreign.MemorySegment;
-import java.lang.foreign.ValueLayout;
 import java.lang.invoke.MethodHandles;
 import java.lang.reflect.Constructor;
 import java.lang.reflect.Method;
-import java.lang.reflect.Parameter;
-import java.util.Arrays;
 import java.util.HashMap;
-import java.util.stream.Collectors;
 
 public class ClassTest {
 
@@ -42,9 +37,9 @@ public class ClassTest {
     public void getStaticField() throws Throwable {
         try(Arena arena = Arena.ofConfined()) {
             JNIEnv jniEnv = new JNIEnv(arena);
-            int defaultInitialCapacity = jniEnv.GetStaticFieldByName(HashMap.class.getDeclaredField("DEFAULT_INITIAL_CAPACITY")).getInt();
+            int defaultInitialCapacity = jniEnv.GetStaticFieldByName(HashMap.class.getDeclaredField("DEFAULT_INITIAL_CAPACITY")).jValue.getInt();
             Assert.assertEquals(defaultInitialCapacity, 1 << 4);
-            var aShort = jniEnv.GetStaticFieldByName(JNIEnv.class.getDeclaredField("JNI_VERSION")).getInt();
+            var aShort = jniEnv.GetStaticFieldByName(JNIEnv.class.getDeclaredField("JNI_VERSION")).jValue.getInt();
             Assert.assertEquals(aShort, JNIEnv.JNI_VERSION);
         }
     }
@@ -53,10 +48,10 @@ public class ClassTest {
     public void setStaticField() throws Throwable {
         try(Arena arena = Arena.ofConfined()) {
             JNIEnv jniEnv = new JNIEnv(arena);
-            var IMPL_LOOKUP = jniEnv.GetStaticFieldByName(MethodHandles.Lookup.class.getDeclaredField("IMPL_LOOKUP")).toPtr();
+            var IMPL_LOOKUP = jniEnv.GetStaticFieldByName(MethodHandles.Lookup.class.getDeclaredField("IMPL_LOOKUP")).ref();
             GlobalRef ref = new GlobalRef(jniEnv, IMPL_LOOKUP);
             try(ref) {
-                jniEnv.SetStaticFieldByName(ClassTest.class.getDeclaredField("lookup"), new JValue(ref.ref().address()));
+                jniEnv.SetStaticFieldByName(ClassTest.class.getDeclaredField("lookup"), ref);
             }
             Assert.assertNotNull(lookup);
         }
@@ -91,8 +86,20 @@ public class ClassTest {
             Object o = env.jObjectToJavaObject(ref.ref());
             Assert.assertTrue(o instanceof AForTest);
             Assert.assertEquals(((AForTest) o).getA(), 3);
+
+            GlobalRef jObject = env.JavaObjectToJObject(o);
+            GlobalRef a = env.CallMethodByName(AForTest.class.getMethod("getA"), jObject.ref());
+            Assert.assertEquals(a.jValue.getInt(), 3);
+
+            int i = env.GetFieldByName(AForTest.class.getDeclaredField("a"), jObject).jValue.getInt();
+            Assert.assertEquals(a.jValue.getInt(), i);
+
+            env.SetFieldByName(AForTest.class.getDeclaredField("a"), jObject, new GlobalRef(env, new JValue(1)));
+            Assert.assertEquals(((AForTest) o).getA(), 1);
         }
     }
+
+
 
 
     public static int a(int a, int b) {

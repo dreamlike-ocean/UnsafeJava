@@ -1,8 +1,7 @@
 package top.dreamlike;
 
-import top.dreamlike.unsafe.JNIEnv;
+import top.dreamlike.unsafe.jni.JNIEnv;
 import top.dreamlike.unsafe.helper.GlobalRef;
-import top.dreamlike.unsafe.helper.JValue;
 
 import java.lang.foreign.Arena;
 import java.lang.invoke.LambdaMetafactory;
@@ -32,11 +31,11 @@ public class VirtualThreadUnsafe {
     private static void fetchUnsafeHandler() throws Throwable {
         try(Arena arena = Arena.ofConfined()) {
             JNIEnv jniEnv = new JNIEnv(arena);
-            var IMPL_LOOKUP = jniEnv.GetStaticFieldByName(MethodHandles.Lookup.class.getDeclaredField("IMPL_LOOKUP")).toPtr();
-            GlobalRef ref = new GlobalRef(jniEnv, IMPL_LOOKUP);
-            try(ref) {
-                jniEnv.SetStaticFieldByName(VirtualThreadUnsafe.class.getDeclaredField("IMPL_LOOKUP"), new JValue(ref.ref().address()));
+
+            try(GlobalRef lookup = jniEnv.GetStaticFieldByName(MethodHandles.Lookup.class.getDeclaredField("IMPL_LOOKUP"));) {
+                jniEnv.SetStaticFieldByName(VirtualThreadUnsafe.class.getDeclaredField("IMPL_LOOKUP"), lookup);
             }
+
         }
     }
 
