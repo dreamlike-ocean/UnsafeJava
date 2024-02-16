@@ -3,13 +3,17 @@ import org.junit.Test;
 import top.dreamlike.unsafe.jni.JNIEnv;
 import top.dreamlike.unsafe.helper.GlobalRef;
 import top.dreamlike.unsafe.helper.JValue;
+import top.dreamlike.unsafe.unreflection.MasterKey;
 
 import java.lang.foreign.Arena;
 import java.lang.foreign.MemorySegment;
+import java.lang.invoke.MethodHandle;
 import java.lang.invoke.MethodHandles;
 import java.lang.reflect.Constructor;
+import java.lang.reflect.Field;
 import java.lang.reflect.Method;
 import java.util.HashMap;
+import java.util.UUID;
 
 public class ClassTest {
 
@@ -19,15 +23,13 @@ public class ClassTest {
     public void testFindClass() throws Exception {
         try (Arena arena = Arena.ofConfined();) {
             JNIEnv jniEnv = new JNIEnv(arena);
-            try (GlobalRef jclass = new GlobalRef(jniEnv, jniEnv.FindClass(String.class))) {
-                MemorySegment jstring = jniEnv.ToString(jclass.ref());
-                String s = jniEnv.jstringToCstr(jstring);
-                Assert.assertEquals(String.class.toString(), s);
+            try (GlobalRef jclass = jniEnv.FindClass(String.class)) {
+                Object o = jniEnv.jObjectToJavaObject(jclass.ref());
+                Assert.assertEquals(o, String.class);
             }
-            try (GlobalRef jclass = new GlobalRef(jniEnv, jniEnv.FindClass(JNIEnv.class))) {
-                MemorySegment jstring = jniEnv.ToString(jclass.ref());
-                String s = jniEnv.jstringToCstr(jstring);
-                Assert.assertEquals(JNIEnv.class.toString(), s);
+            try (GlobalRef jclass = jniEnv.FindClass(JNIEnv.class)) {
+                Object o = jniEnv.jObjectToJavaObject(jclass.ref());
+                Assert.assertEquals(o, JNIEnv.class);
             }
         }
 
@@ -98,6 +100,9 @@ public class ClassTest {
             Assert.assertEquals(((AForTest) o).getA(), 1);
         }
     }
+
+
+
 
 
 
