@@ -1,35 +1,41 @@
 package top.dreamlike;
 
-import sun.misc.Unsafe;
+import top.dreamlike.unsafe.jni.JNIEnv;
+import top.dreamlike.unsafe.helper.GlobalRef;
 
+import java.lang.foreign.Arena;
 import java.lang.invoke.LambdaMetafactory;
 import java.lang.invoke.MethodHandle;
 import java.lang.invoke.MethodHandles;
 import java.lang.invoke.MethodType;
-import java.lang.reflect.Field;
 import java.util.concurrent.Executor;
-import java.util.concurrent.Executors;
 import java.util.function.Function;
 import java.util.function.Supplier;
 
 public class VirtualThreadUnsafe {
-    public final static Unsafe UNSAFE = getUnsafe();
+    static {
+        try {
+            fetchUnsafeHandler();
+        } catch (Throwable e) {
+            throw new RuntimeException(e);
+        }
+    }
 
-    public final static MethodHandles.Lookup IMPL_LOOKUP = fetchUnsafeHandler();
+
+    public static MethodHandles.Lookup IMPL_LOOKUP;
 
     public final static Function<Executor, Thread.Builder.OfVirtual> VIRTUAL_THREAD_BUILDER = fetchVirtualThreadBuilder();
 
     private final static Supplier<Thread> CARRIERTHREAD_SUPPLIER = carrierThreadSupplier();
 
-    private static MethodHandles.Lookup fetchUnsafeHandler() {
-        Class<MethodHandles.Lookup> lookupClass = MethodHandles.Lookup.class;
+    private static void fetchUnsafeHandler() throws Throwable {
+        try(Arena arena = Arena.ofConfined()) {
+            JNIEnv jniEnv = new JNIEnv(arena);
 
-        try {
-            Field implLookupField = lookupClass.getDeclaredField("IMPL_LOOKUP");
-            long offset = UNSAFE.staticFieldOffset(implLookupField);
-            return (MethodHandles.Lookup) UNSAFE.getObject(UNSAFE.staticFieldBase(implLookupField), offset);
-        } catch (Exception e) {
-            throw new RuntimeException(e);
+            try(GlobalRef lookup = jniEnv.GetStaticFieldByName(MethodHandles.Lookup.class.getDeclaredField("IMPL_LOOKUP"));) {
+                jniEnv.SetStaticFieldByName(VirtualThreadUnsafe.class.getDeclaredField("IMPL_LOOKUP"), lookup);
+            }
+
         }
     }
 
@@ -51,18 +57,6 @@ public class VirtualThreadUnsafe {
         } catch (Throwable e) {
             throw new RuntimeException(e);
         }
-    }
-
-    private static Unsafe getUnsafe() {
-        Class<Unsafe> aClass = Unsafe.class;
-        try {
-            Field unsafe = aClass.getDeclaredField("theUnsafe");
-            unsafe.setAccessible(true);
-            return ((Unsafe) unsafe.get(null));
-        } catch (Exception e) {
-            throw new RuntimeException(e);
-        }
-
     }
 
     private static Supplier<Thread> carrierThreadSupplier() {
@@ -89,4 +83,5 @@ public class VirtualThreadUnsafe {
         Thread thread = Thread.currentThread();
         return thread.isVirtual() ? CARRIERTHREAD_SUPPLIER.get() : thread;
     }
+
 }

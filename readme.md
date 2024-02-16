@@ -24,6 +24,12 @@
 IMPL_LOOKUP这个是无视各种权限的lookup，从它这里获取到的MethodHandle无视任何权限
 然后就可以好好玩拿到MethodHandle了
 
+为了应对未来的Unsafe中的某些内存操作被移除的问题，在[寒老板](https://github.com/IceSoulHanxi)的一次群聊中提到了几个java动态库导出的符号，我们逆向了这些符号以及正向参考了openjdk源码，[使用Panama API封装了大部分的JNI操作](https://github.com/dreamlike-ocean/backend_qingyou/blob/main/dreamlike%E7%9A%84%E7%A7%81%E8%B4%A7/afterUnsafe.md),使得可以绕开模块化之类的限制让我们继续可以hack标准库，继续能拿到IMPL_LOOKUP字段
+
+> [!WARNING]
+> 目前只在Linux以及Windows x86_64上测试过，其他平台可能需要评估兼容性问题
+
+
 当然你也会发现项目里面有另外一种写法，即获取到MethodHandle之后转换为`java.util.function.Function`，这两种形式核心原理是一样的
 ```java
     private static Function<Executor, Thread.Builder.OfVirtual> fetchVirtualThreadBuilder() {
@@ -57,3 +63,4 @@ TerminatingThreadLocal API的则是比较复杂
 对于给Vert.x的扩展，用的是Async/Await这种风格的，避免某些半瓶水再来烦我，我讲一下为什么要这样写
 首先我写的await函数只是强制要求当前在Continuation中而已，没有传染性的
 其次写`AsyncScope`只是帮你开启Continuation罢了
+
