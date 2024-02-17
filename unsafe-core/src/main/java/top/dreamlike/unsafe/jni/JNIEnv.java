@@ -28,65 +28,6 @@ public class JNIEnv {
 
     private final static ThreadLocal<Object> jniToJava =  new ThreadLocal<>();
 
-    private final static MethodHandle GetStringPlatformCharsMH = throwable(() -> {
-        MemorySegment JNU_GetStringPlatformCharsFP = SymbolLookup.loaderLookup()
-                .find("JNU_GetStringPlatformChars")
-                .get();
-        return Linker.nativeLinker()
-                .downcallHandle(FunctionDescriptor.of(
-                        /*const char * */ValueLayout.ADDRESS,
-                        /*JNIEnv *env */ValueLayout.ADDRESS,
-                        /*jstring str*/ ValueLayout.ADDRESS,
-                        /*jboolean *isCopy*/ ValueLayout.ADDRESS
-                )).bindTo(JNU_GetStringPlatformCharsFP);
-    });
-
-    private final static MethodHandle GetStaticFieldByName = throwable(() -> {
-        MemorySegment JNU_GetStaticFieldByNameFP = SymbolLookup.loaderLookup()
-                .find("JNU_GetStaticFieldByName")
-                .get();
-        return Linker.nativeLinker()
-                .downcallHandle(FunctionDescriptor.of(
-                        /*jobject*/ValueLayout.JAVA_LONG,
-                        /*JNIEnv *env */ValueLayout.ADDRESS,
-                        /*hasException*/ ValueLayout.ADDRESS,
-                        /*const char *classname*/ ValueLayout.ADDRESS,
-                        /*const char *name*/ ValueLayout.ADDRESS,
-                        /* const char *signature*/ ValueLayout.ADDRESS
-                )).bindTo(JNU_GetStaticFieldByNameFP);
-    });
-
-
-    /**
-     * 只用于调用系统加载器加载的类中的静态方法
-     * 原因在于：对应的jni实现里面先获取类加载器是查找vframe顶层的栈帧，拿到这个栈帧的owner，然后用这个owner所属的类加载器去找到对应的类
-     * 而在这里顶层栈帧归属于MethodHandle,所以找到的类加载器是系统类加载器，所以只能调用系统类加载器加载的类
-     */
-    public final static MemorySegment CallStaticMethodByNameFp = SymbolLookup.loaderLookup().find("JNU_CallStaticMethodByName").get();
-
-    public final static MemorySegment CallMethodByNameFp = SymbolLookup.loaderLookup().find("JNU_CallMethodByName").get();
-
-
-    private final static MethodHandle CallStaticMethodByNameEmptyArgsMethodHandle = Linker.nativeLinker()
-            .downcallHandle(FunctionDescriptor.of(
-                    ValueLayout.JAVA_LONG,
-                    /*JNIEnv *env */ValueLayout.ADDRESS,
-                    /*jboolean *hasException*/ValueLayout.ADDRESS,
-                    /* const char *classname*/ ValueLayout.ADDRESS,
-                    /*const char *name*/ ValueLayout.ADDRESS,
-                    /* const char *signature*/ ValueLayout.ADDRESS
-            )).bindTo(CallStaticMethodByNameFp);
-
-    private final static MethodHandle CallMethodByNameEmptyArgsMethodHandle = Linker.nativeLinker()
-            .downcallHandle(FunctionDescriptor.of(
-                    ValueLayout.JAVA_LONG,
-                    /*JNIEnv *env */ValueLayout.ADDRESS,
-                    /*jboolean *hasException*/ValueLayout.ADDRESS,
-                    /* jobject*/ ValueLayout.ADDRESS,
-                    /*const char *name*/ ValueLayout.ADDRESS,
-                    /* const char *signature*/ ValueLayout.ADDRESS
-            )).bindTo(CallMethodByNameFp);
-
     private final static MethodHandle NewStringPlatform = throwable(() -> {
         MemorySegment JNU_NewStringPlatformFP = SymbolLookup.loaderLookup()
                 .find("JNU_NewStringPlatform")
@@ -98,19 +39,6 @@ public class JNIEnv {
                         /*const char *str*/ ValueLayout.ADDRESS
                 )).bindTo(JNU_NewStringPlatformFP);
     });
-
-    private final static MethodHandle ToStringMh = throwable(() -> {
-        MemorySegment JNU_ToStringFP = SymbolLookup.loaderLookup()
-                .find("JNU_ToString")
-                .get();
-        return Linker.nativeLinker()
-                .downcallHandle(FunctionDescriptor.of(
-                        /*jstring*/ValueLayout.ADDRESS,
-                        /*JNIEnv *env */ValueLayout.ADDRESS,
-                        /*jobject obj*/ ValueLayout.ADDRESS
-                )).bindTo(JNU_ToStringFP);
-    });
-
 
     private final SegmentAllocator allocator;
     private final MemorySegment jniEnvPointer;
@@ -331,23 +259,8 @@ public class JNIEnv {
         });
     }
 
-
-    private GlobalRef ToString(MemorySegment jobject) {
-        return throwable(() -> new GlobalRef(this, (MemorySegment) ToStringMh.invokeExact(jniEnvPointer, jobject)));
-    }
-
     private GlobalRef cstrToJstring(MemorySegment cstr) {
         return throwable(() -> new GlobalRef(this,  (MemorySegment) NewStringPlatform.invokeExact(jniEnvPointer, cstr)));
-    }
-
-    private String jstringToCstr(MemorySegment jstring) {
-
-        MemorySegment memorySegment = throwable(() -> {
-
-            return (MemorySegment) GetStringPlatformCharsMH.invokeExact(jniEnvPointer, jstring, MemorySegment.NULL);
-
-        });
-        return memorySegment.reinterpret(Long.MAX_VALUE).getUtf8String(0);
     }
 
     public GlobalRef CallStaticMethodByName(Method method) {
@@ -582,9 +495,5 @@ public class JNIEnv {
         return Linker.nativeLinker()
                 .downcallHandle(FunctionDescriptor.of(ValueLayout.ADDRESS, ValueLayout.ADDRESS, ValueLayout.JAVA_INT))
                 .bindTo(JNU_GetEnv_FP);
-    }
-
-    private String forDebug(MemorySegment jobject) {
-        return jstringToCstr(ToString(jobject).ref());
     }
 }
