@@ -1,11 +1,11 @@
-package top.dreamlike;
+package top.dreamlike.unsafe.vertx;
 
 import io.vertx.core.*;
 import io.vertx.core.impl.VertxInternal;
 
 import java.util.UUID;
 
-import static top.dreamlike.AsyncScope.await;
+import static top.dreamlike.unsafe.vertx.AsyncScope.await;
 
 public class Main {
     public static Vertx vertx;

@@ -1,8 +1,9 @@
-package top.dreamlike;
+package top.dreamlike.unsafe.vertx;
 
 import io.vertx.core.Context;
 import io.vertx.core.Future;
 import io.vertx.core.Vertx;
+import top.dreamlike.unsafe.vthread.Continuation;
 
 public class AsyncScope {
 
@@ -33,7 +34,16 @@ public class AsyncScope {
         if (future.isComplete()){
             return future.result();
         }
-        future.onComplete(ar -> currentContinuation.run());
+        Context context = Vertx.currentContext();
+        future.onComplete(ar -> {
+            if (context == null) {
+                currentContinuation.run();
+                return;
+            }
+            context.runOnContext(v -> {
+                currentContinuation.run();
+            });
+        });
         Continuation.yield();
         if (future.succeeded()) {
             return future.result();

@@ -1,6 +1,6 @@
-package top.dreamlike.unsafe.helper;
+package top.dreamlike.unsafe.core.helper;
 
-import top.dreamlike.unsafe.jni.JNIEnv;
+import top.dreamlike.unsafe.core.jni.JNIEnv;
 
 import java.lang.foreign.MemorySegment;
 

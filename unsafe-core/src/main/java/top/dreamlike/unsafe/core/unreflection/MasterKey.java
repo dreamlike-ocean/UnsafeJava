@@ -1,7 +1,8 @@
-package top.dreamlike.unsafe.unreflection;
+package top.dreamlike.unsafe.core.unreflection;
 
-import top.dreamlike.unsafe.helper.GlobalRef;
-import top.dreamlike.unsafe.jni.JNIEnv;
+import top.dreamlike.unsafe.core.helper.GlobalRef;
+import top.dreamlike.unsafe.core.helper.NativeHelper;
+import top.dreamlike.unsafe.core.jni.JNIEnv;
 
 import java.lang.foreign.Arena;
 import java.lang.invoke.MethodHandle;
@@ -11,7 +12,7 @@ import java.lang.reflect.Constructor;
 import java.lang.reflect.Field;
 import java.lang.reflect.Method;
 
-import static top.dreamlike.unsafe.helper.NativeHelper.throwable;
+import static top.dreamlike.unsafe.core.helper.NativeHelper.throwable;
 
 public class MasterKey {
     public static MethodHandles.Lookup lookup;
@@ -27,15 +28,15 @@ public class MasterKey {
     }
 
     public static MethodHandle openTheDoor(Method method) {
-        return throwable(() -> lookup.unreflect(method));
+        return NativeHelper.throwable(() -> lookup.unreflect(method));
     }
 
     public static MethodHandle openTheDoor(Constructor ctor) {
-        return throwable(() -> lookup.unreflectConstructor(ctor));
+        return NativeHelper.throwable(() -> lookup.unreflectConstructor(ctor));
     }
 
     public static VarHandle openTheDoor(Field field) {
-        return throwable(() -> lookup.unreflectVarHandle(field));
+        return NativeHelper.throwable(() -> lookup.unreflectVarHandle(field));
     }
 
 }

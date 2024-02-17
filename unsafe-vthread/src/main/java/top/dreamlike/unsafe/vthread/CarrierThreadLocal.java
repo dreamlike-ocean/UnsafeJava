@@ -1,4 +1,6 @@
-package top.dreamlike;
+package top.dreamlike.unsafe.vthread;
+
+import top.dreamlike.unsafe.core.unreflection.MasterKey;
 
 import java.lang.invoke.LambdaMetafactory;
 import java.lang.invoke.MethodHandle;
@@ -23,9 +25,7 @@ public class CarrierThreadLocal<T> extends ThreadLocal<T> {
         try{
             String className = "jdk.internal.misc.CarrierThreadLocal";
             Class<?> clazz = Class.forName(className);
-            MethodHandle constructorMethodHandle = VirtualThreadUnsafe.IMPL_LOOKUP
-                    .in(clazz)
-                    .findConstructor(clazz, MethodType.methodType(void.class));
+            MethodHandle constructorMethodHandle = MasterKey.openTheDoor(clazz.getDeclaredConstructor());
 
             MethodHandle methodHandle = LambdaMetafactory.metafactory(
                     VirtualThreadUnsafe.IMPL_LOOKUP,

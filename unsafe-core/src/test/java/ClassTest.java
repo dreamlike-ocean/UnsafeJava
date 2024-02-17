@@ -1,19 +1,15 @@
 import org.junit.Assert;
 import org.junit.Test;
-import top.dreamlike.unsafe.jni.JNIEnv;
-import top.dreamlike.unsafe.helper.GlobalRef;
-import top.dreamlike.unsafe.helper.JValue;
-import top.dreamlike.unsafe.unreflection.MasterKey;
+import top.dreamlike.unsafe.core.jni.JNIEnv;
+import top.dreamlike.unsafe.core.helper.GlobalRef;
+import top.dreamlike.unsafe.core.helper.JValue;
 
 import java.lang.foreign.Arena;
 import java.lang.foreign.MemorySegment;
-import java.lang.invoke.MethodHandle;
 import java.lang.invoke.MethodHandles;
 import java.lang.reflect.Constructor;
-import java.lang.reflect.Field;
 import java.lang.reflect.Method;
 import java.util.HashMap;
-import java.util.UUID;
 
 public class ClassTest {
 

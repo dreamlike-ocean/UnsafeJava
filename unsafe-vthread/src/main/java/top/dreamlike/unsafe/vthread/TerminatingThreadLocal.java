@@ -1,11 +1,11 @@
-package top.dreamlike;
+package top.dreamlike.unsafe.vthread;
 
 import net.bytebuddy.ByteBuddy;
 import net.bytebuddy.implementation.MethodDelegation;
 import net.bytebuddy.matcher.ElementMatchers;
+import top.dreamlike.unsafe.core.unreflection.MasterKey;
 
 import java.lang.invoke.MethodHandle;
-import java.lang.invoke.MethodType;
 import java.lang.invoke.VarHandle;
 import java.lang.reflect.Field;
 import java.lang.reflect.Method;
@@ -27,9 +27,6 @@ public class TerminatingThreadLocal<T> extends ThreadLocal<T> {
         }
     }
 
-
-
-
     @Override
     public T get() {
         return internal.get();
@@ -46,7 +43,7 @@ public class TerminatingThreadLocal<T> extends ThreadLocal<T> {
     }
 
     protected void threadTerminated(T value) {
-        System.out.println(value+":end");
+
     }
 
 
@@ -54,16 +51,8 @@ public class TerminatingThreadLocal<T> extends ThreadLocal<T> {
         var customerTerminatingThreadLocalClass = init();
 
         try {
-            internalConstructorMH = VirtualThreadUnsafe
-                    .IMPL_LOOKUP
-                    .in(customerTerminatingThreadLocalClass)
-                    .findConstructor(customerTerminatingThreadLocalClass, MethodType.methodType(void.class));
-
-            callBackVH = VirtualThreadUnsafe
-                    .IMPL_LOOKUP
-                    .in(customerTerminatingThreadLocalClass)
-                    .findVarHandle(customerTerminatingThreadLocalClass, "callback", CallBack.class);
-
+            internalConstructorMH = MasterKey.openTheDoor(customerTerminatingThreadLocalClass.getDeclaredConstructor());
+            callBackVH = MasterKey.openTheDoor(customerTerminatingThreadLocalClass.getDeclaredField("callback"));
         }catch (Throwable throwable) {
             throw new RuntimeException(throwable);
         }
