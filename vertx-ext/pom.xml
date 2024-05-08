@@ -4,9 +4,9 @@
          xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 http://maven.apache.org/xsd/maven-4.0.0.xsd">
     <modelVersion>4.0.0</modelVersion>
     <parent>
-        <groupId>top.dreamlike</groupId>
+        <groupId>io.github.dreamlike-ocean</groupId>
         <artifactId>unsafe-java</artifactId>
-        <version>1.0-SNAPSHOT</version>
+        <version>1.0</version>
     </parent>
 
     <artifactId>vertx-ext</artifactId>
@@ -31,9 +31,8 @@
 
     <dependencies>
         <dependency>
-            <groupId>top.dreamlike</groupId>
+            <groupId>io.github.dreamlike-ocean</groupId>
             <artifactId>unsafe-vthread</artifactId>
-            <version>1.0.0</version>
         </dependency>
         <dependency>
             <groupId>io.vertx</groupId>

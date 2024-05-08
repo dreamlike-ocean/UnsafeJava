@@ -30,6 +30,15 @@ IMPL_LOOKUP这个是无视各种权限的lookup，从它这里获取到的Method
 > 目前只在Linux以及Windows x86_64,Mac(aarch64以及amd64)上测试过，其他平台可能需要评估兼容性问题
 
 
+maven 坐标为，本库以multi-release的形式发布，所以你可以在jdk8-jdk22上使用，从jdk22开始默认使用的Panama的实现
+```xml
+<dependency>
+  <groupId>io.github.dreamlike-ocean</groupId>
+  <artifactId>unsafe-core</artifactId>
+  <version>1.2</version>
+</dependency>
+```
+
 当然你也会发现项目里面有另外一种写法，即获取到MethodHandle之后转换为`java.util.function.Function`，这两种形式核心原理是一样的
 ```java
     private static Function<Executor, Thread.Builder.OfVirtual> fetchVirtualThreadBuilder() {

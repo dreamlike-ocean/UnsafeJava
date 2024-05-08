@@ -12,7 +12,6 @@ import java.nio.file.Path;
 import java.util.Arrays;
 import java.util.stream.Collectors;
 
-import static java.lang.StringTemplate.STR;
 import static top.dreamlike.unsafe.core.helper.NativeHelper.throwable;
 
 public class JNIEnv {
@@ -23,7 +22,7 @@ public class JNIEnv {
 
     private final static MethodHandle GET_JNIENV_MH = throwable(JNIEnv::initGetJNIEnvMH);
 
-    private final static ThreadLocal<Object> jniToJava =  new ThreadLocal<>();
+    private final static ThreadLocal<Object> jniToJava = new ThreadLocal<>();
 
     private final static MethodHandle NewStringPlatform = throwable(() -> {
         MemorySegment JNU_NewStringPlatformFP = SymbolLookup.loaderLookup()
@@ -68,10 +67,10 @@ public class JNIEnv {
     public GlobalRef FindClass(Class c) {
         boolean isSystemClassloader = c.getClassLoader() == null;
         if (isSystemClassloader) {
-            return throwable(() -> new GlobalRef(this,  (MemorySegment) JNIEnvFunctions.FindClassMH.invokeExact(
+            return throwable(() -> new GlobalRef(this, (MemorySegment) JNIEnvFunctions.FindClassMH.invokeExact(
                     functions.FindClassFp,
                     jniEnvPointer,
-                    allocator.allocateUtf8String(c.getName().replace(".", "/"))))
+                    allocator.allocateFrom(c.getName().replace(".", "/"))))
             );
         }
 
@@ -79,7 +78,7 @@ public class JNIEnv {
         {
             try (GlobalRef threadRef = CallStaticMethodByName(Thread.class.getMethod("currentThread"));
                  GlobalRef classLoaderJobjectRef = CallMethodByName(Thread.class.getMethod("getContextClassLoader"), threadRef.ref());
-                 GlobalRef classNameRef = cstrToJstring((allocator.allocateUtf8String(c.getName())))
+                 GlobalRef classNameRef = cstrToJstring((allocator.allocateFrom(c.getName())))
             ) {
 //                Class<?> name = Class.forName("top.dreamlike.unsafe.jni.JNIEnv", true, loader);
                 MemorySegment segment = allocator.allocate(JValue.jvalueLayout);
@@ -100,13 +99,13 @@ public class JNIEnv {
         }
         return throwable(() -> {
 
-            try(var clsRef = FindClass(field.getDeclaringClass())){
+            try (var clsRef = FindClass(field.getDeclaringClass())) {
                 var fidRef = (MemorySegment) JNIEnvFunctions.GetStaticFieldID_MH.invokeExact(
                         functions.GetStaticFieldIDFp,
                         jniEnvPointer,
                         clsRef.ref(),
-                        allocator.allocateUtf8String(field.getName()),
-                        allocator.allocateUtf8String(NativeHelper.classToSig(field.getType()))
+                        allocator.allocateFrom(field.getName()),
+                        allocator.allocateFrom(NativeHelper.classToSig(field.getType()))
                 );
                 boolean isRef = false;
                 long value = switch (field.getType().getName()) {
@@ -126,7 +125,7 @@ public class JNIEnv {
                             (long) JNIEnvFunctions.GetStaticFloatField_MH.invokeExact(functions.GetStaticFloatFieldFp, jniEnvPointer, clsRef.ref(), fidRef);
                     case "double" ->
                             (long) JNIEnvFunctions.GetStaticDoubleField_MH.invokeExact(functions.GetStaticDoubleFieldFp, jniEnvPointer, clsRef.ref(), fidRef);
-                    default ->{
+                    default -> {
                         isRef = true;
                         yield (long) JNIEnvFunctions.GetStaticObjectField_MH.invokeExact(functions.GetStaticObjectFieldFp, jniEnvPointer, clsRef.ref(), fidRef);
                     }
@@ -144,13 +143,13 @@ public class JNIEnv {
         throwable(() -> {
             Class<?> aClass = field.getDeclaringClass();
 
-            try(GlobalRef clsRef = FindClass(aClass);) {
+            try (GlobalRef clsRef = FindClass(aClass);) {
                 var fidRef = (MemorySegment) JNIEnvFunctions.GetStaticFieldID_MH.invokeExact(
                         functions.GetStaticFieldIDFp,
                         jniEnvPointer,
                         clsRef.ref(),
-                        allocator.allocateUtf8String(field.getName()),
-                        allocator.allocateUtf8String(NativeHelper.classToSig(field.getType()))
+                        allocator.allocateFrom(field.getName()),
+                        allocator.allocateFrom(NativeHelper.classToSig(field.getType()))
                 );
                 switch (field.getType().getName()) {
                     case "boolean" ->
@@ -182,13 +181,13 @@ public class JNIEnv {
             throw new IllegalArgumentException("only support not static field");
         }
         return throwable(() -> {
-            try(var clsRef = FindClass(field.getDeclaringClass())) {
+            try (var clsRef = FindClass(field.getDeclaringClass())) {
                 var fidRef = (MemorySegment) JNIEnvFunctions.GetFieldId.invokeExact(
                         functions.GetFieldIDFp,
                         jniEnvPointer,
                         clsRef.ref(),
-                        allocator.allocateUtf8String(field.getName()),
-                        allocator.allocateUtf8String(NativeHelper.classToSig(field.getType()))
+                        allocator.allocateFrom(field.getName()),
+                        allocator.allocateFrom(NativeHelper.classToSig(field.getType()))
                 );
                 boolean isRef = false;
                 long value = switch (field.getType().getName()) {
@@ -208,7 +207,7 @@ public class JNIEnv {
                             (long) JNIEnvFunctions.GetFloatField.invokeExact(functions.GetFloatFieldFp, jniEnvPointer, jobject.ref(), fidRef);
                     case "double" ->
                             (long) JNIEnvFunctions.GetDoubleField.invokeExact(functions.GetDoubleFieldFp, jniEnvPointer, jobject.ref(), fidRef);
-                    default ->{
+                    default -> {
                         isRef = true;
                         yield (long) JNIEnvFunctions.GetObjectField.invokeExact(functions.GetObjectFieldFp, jniEnvPointer, jobject.ref(), fidRef);
                     }
@@ -229,8 +228,8 @@ public class JNIEnv {
                         functions.GetFieldIDFp,
                         jniEnvPointer,
                         clsRef.ref(),
-                        allocator.allocateUtf8String(field.getName()),
-                        allocator.allocateUtf8String(NativeHelper.classToSig(field.getType()))
+                        allocator.allocateFrom(field.getName()),
+                        allocator.allocateFrom(NativeHelper.classToSig(field.getType()))
                 );
                 switch (field.getType().getName()) {
                     case "boolean" ->
@@ -257,11 +256,11 @@ public class JNIEnv {
     }
 
     private GlobalRef cstrToJstring(MemorySegment cstr) {
-        return throwable(() -> new GlobalRef(this,  (MemorySegment) NewStringPlatform.invokeExact(jniEnvPointer, cstr)));
+        return throwable(() -> new GlobalRef(this, (MemorySegment) NewStringPlatform.invokeExact(jniEnvPointer, cstr)));
     }
 
     public GlobalRef CallStaticMethodByName(Method method) {
-        return CallStaticMethodByName(method, MemorySegment.NULL, STR."()\{NativeHelper.classToSig(method.getReturnType())}");
+        return CallStaticMethodByName(method, MemorySegment.NULL, "()" + NativeHelper.classToSig(method.getReturnType()));
     }
 
     public GlobalRef CallStaticMethodByName(Method method, MemorySegment jvalues) {
@@ -269,7 +268,7 @@ public class JNIEnv {
                 .map(Parameter::getType)
                 .map(NativeHelper::classToSig)
                 .collect(Collectors.joining());
-        return CallStaticMethodByName(method, jvalues, STR."(\{paramSig})\{NativeHelper.classToSig(method.getReturnType())}");
+        return CallStaticMethodByName(method, jvalues, "(" + paramSig + ")" + NativeHelper.classToSig(method.getReturnType()));
     }
 
     public GlobalRef CallStaticMethodByName(Method method, JValue... jvalues) {
@@ -281,216 +280,216 @@ public class JNIEnv {
         for (int i = 0; i < jvalues.length; i++) {
             longs[i] = jvalues[i].getLong();
         }
-        MemorySegment jValuesPtr = allocator.allocateArray(JValue.jvalueLayout, jvalues.length);
+        MemorySegment jValuesPtr = allocator.allocate(JValue.jvalueLayout, jvalues.length);
         jValuesPtr.copyFrom(MemorySegment.ofArray(longs));
-        return CallStaticMethodByName(method, jValuesPtr, STR."(\{paramSig})\{NativeHelper.classToSig(method.getReturnType())}");
-    }
+        return CallStaticMethodByName(method, jValuesPtr, "(" + paramSig + ")" +NativeHelper.classToSig(method.getReturnType()));
+}
 
-    /**
-     * 只用于调用系统加载器加载的类中的静态方法
-     * 原因在于：对应的jni实现里面先获取类加载器是查找vframe顶层的栈帧，拿到这个栈帧的owner，然后用这个owner所属的类加载器去找到对应的类
-     * 而在这里顶层栈帧归属于MethodHandle,所以找到的类加载器是系统类加载器，所以只能调用系统类加载器加载的类
-     *
-     * @param method 需要调用的方法
-     */
-    public GlobalRef CallStaticMethodByName(Method method, MemorySegment jvalues, String sig) {
-        if (method.getParameters().length * JValue.jvalueLayout.byteSize() != jvalues.byteSize()) {
-            throw new IllegalArgumentException("jvalues size not match");
-        }
-        if (!Modifier.isStatic(method.getModifiers())) {
-            throw new IllegalArgumentException("only support static method");
-        }
-        Class<?> ownerClass = method.getDeclaringClass();
-        String methodName = method.getName();
-        return throwable(() -> {
-            //todo解析错误的问题
-            try (GlobalRef jclassRef = FindClass(ownerClass)) {
-                MemorySegment mid = (MemorySegment) JNIEnvFunctions.GetStaticMethodID_MH.invokeExact(functions.GetStaticMethodIDFp, jniEnvPointer, jclassRef.ref(), allocator.allocateUtf8String(methodName), allocator.allocateUtf8String(sig));
-                boolean isRef = false;
-                long jvalue = switch (method.getReturnType().getName()) {
-                    case "void" -> {
-                        JNIEnvFunctions.CallStaticVoidMethodA_MH.invokeExact(functions.CallStaticVoidMethodAFp, jniEnvPointer, jclassRef.ref(), mid, jvalues);
-                        yield 0L;
-                    }
-                    case "int" ->
-                            (long) JNIEnvFunctions.CallStaticIntMethodA_MH.invokeExact(functions.CallStaticIntMethodAFp, jniEnvPointer, jclassRef.ref(), mid, jvalues);
-                    case "boolean" ->
-                            (long) JNIEnvFunctions.CallStaticBooleanMethodA_MH.invokeExact(functions.CallStaticBooleanMethodAFp, jniEnvPointer, jclassRef.ref(), mid, jvalues);
-                    case "byte" ->
-                            (long) JNIEnvFunctions.CallStaticByteMethodA_MH.invokeExact(functions.CallStaticByteMethodAFp, jniEnvPointer, jclassRef.ref(), mid, jvalues);
-                    case "char" ->
-                            (long) JNIEnvFunctions.CallStaticCharMethodA_MH.invokeExact(functions.CallStaticCharMethodAFp, jniEnvPointer, jclassRef.ref(), mid, jvalues);
-                    case "short" ->
-                            (long) JNIEnvFunctions.CallStaticShortMethodA_MH.invokeExact(functions.CallStaticShortMethodAFp, jniEnvPointer, jclassRef.ref(), mid, jvalues);
-                    case "long" ->
-                            (long) JNIEnvFunctions.CallStaticLongMethodA_MH.invokeExact(functions.CallStaticLongMethodAFp, jniEnvPointer, jclassRef.ref(), mid, jvalues);
-                    case "float" ->
-                            (long) JNIEnvFunctions.CallStaticFloatMethodA_MH.invokeExact(functions.CallStaticFloatMethodAFp, jniEnvPointer, jclassRef.ref(), mid, jvalues);
-                    case "double" ->
-                            (long) JNIEnvFunctions.CallStaticDoubleMethodA_MH.invokeExact(functions.CallStaticDoubleMethodAFp, jniEnvPointer, jclassRef.ref(), mid, jvalues);
-                    default -> {
-                        isRef = true;
-                        yield (long) JNIEnvFunctions.CallStaticObjectMethodA_MH.invokeExact(functions.CallStaticObjectMethodAFp, jniEnvPointer, jclassRef.ref(), mid, jvalues);
-                    }
-                };
-                return isRef ? new GlobalRef(this, MemorySegment.ofAddress(jvalue)) : new GlobalRef(this, new JValue(jvalue));
-            }
-        });
+/**
+ * 只用于调用系统加载器加载的类中的静态方法
+ * 原因在于：对应的jni实现里面先获取类加载器是查找vframe顶层的栈帧，拿到这个栈帧的owner，然后用这个owner所属的类加载器去找到对应的类
+ * 而在这里顶层栈帧归属于MethodHandle,所以找到的类加载器是系统类加载器，所以只能调用系统类加载器加载的类
+ *
+ * @param method 需要调用的方法
+ */
+public GlobalRef CallStaticMethodByName(Method method, MemorySegment jvalues, String sig) {
+    if (method.getParameters().length * JValue.jvalueLayout.byteSize() != jvalues.byteSize()) {
+        throw new IllegalArgumentException("jvalues size not match");
     }
-
-    public GlobalRef CallMethodByName(Method method, MemorySegment jobject) {
-        return CallMethodByName(method, jobject, MemorySegment.NULL, STR."()\{NativeHelper.classToSig(method.getReturnType())}");
+    if (!Modifier.isStatic(method.getModifiers())) {
+        throw new IllegalArgumentException("only support static method");
     }
-
-    public GlobalRef CallMethodByName(Method method, MemorySegment jobject, MemorySegment jvalues) {
-        String paramSig = Arrays.stream(method.getParameters())
-                .map(Parameter::getType)
-                .map(NativeHelper::classToSig)
-                .collect(Collectors.joining());
-        return CallMethodByName(method, jobject, jvalues, STR."(\{paramSig})\{NativeHelper.classToSig(method.getReturnType())}");
-    }
-
-    public GlobalRef CallMethodByName(Method method, MemorySegment jobject, MemorySegment jvalues, String sig) {
-        if (method.getParameters().length * JValue.jvalueLayout.byteSize() != jvalues.byteSize()) {
-            throw new IllegalArgumentException("jvalues size not match");
-        }
-        if (Modifier.isStatic(method.getModifiers())) {
-            throw new IllegalArgumentException("only support not static method");
-        }
-        String methodName = method.getName();
-        return throwable(() -> {
+    Class<?> ownerClass = method.getDeclaringClass();
+    String methodName = method.getName();
+    return throwable(() -> {
+        //todo解析错误的问题
+        try (GlobalRef jclassRef = FindClass(ownerClass)) {
+            MemorySegment mid = (MemorySegment) JNIEnvFunctions.GetStaticMethodID_MH.invokeExact(functions.GetStaticMethodIDFp, jniEnvPointer, jclassRef.ref(), allocator.allocateFrom(methodName), allocator.allocateFrom(sig));
             boolean isRef = false;
-            MemorySegment clazz = (MemorySegment) JNIEnvFunctions.GetObjectClass_MH.invokeExact(functions.GetObjectClassFp, jniEnvPointer, jobject);
-            try (GlobalRef ref = new GlobalRef(this, clazz);) {
-                MemorySegment mid = (MemorySegment) JNIEnvFunctions.GetMethodID_MH.invokeExact(functions.GetMethodIDFp, jniEnvPointer, ref.ref(), allocator.allocateUtf8String(methodName), allocator.allocateUtf8String(sig));
-                long returnValue = switch (method.getReturnType().getName()) {
-                    case "void" -> {
-                        JNIEnvFunctions.CallVoidMethodA_MH.invokeExact(functions.CallVoidMethodAFp, jniEnvPointer, jobject, mid, jvalues);
-                        yield 0L;
-                    }
-                    case "int" ->
-                            (long) JNIEnvFunctions.CallIntMethodA_MH.invokeExact(functions.CallIntMethodAFp, jniEnvPointer, jobject, mid, jvalues);
-                    case "boolean" ->
-                            (long) JNIEnvFunctions.CallBooleanMethodA_MH.invokeExact(functions.CallBooleanMethodAFp, jniEnvPointer, mid, jvalues);
-                    case "byte" ->
-                            (long) JNIEnvFunctions.CallByteMethodA_MH.invokeExact(functions.CallByteMethodAFp, jniEnvPointer, jobject, mid, jvalues);
-                    case "char" ->
-                            (long) JNIEnvFunctions.CallCharMethodA_MH.invokeExact(functions.CallCharMethodAFp, jniEnvPointer, jobject, mid, jvalues);
-                    case "short" ->
-                            (long) JNIEnvFunctions.CallShortMethodA_MH.invokeExact(functions.CallShortMethodAFp, jniEnvPointer, jobject, mid, jvalues);
-                    case "long" ->
-                            (long) JNIEnvFunctions.CallLongMethodA_MH.invokeExact(functions.CallLongMethodAFp, jniEnvPointer, jobject, mid, jvalues);
-                    case "float" ->
-                            (long) JNIEnvFunctions.CallFloatMethodA_MH.invokeExact(functions.CallFloatMethodAFp, jniEnvPointer, jobject, mid, jvalues);
-                    case "double" ->
-                            (long) JNIEnvFunctions.CallDoubleMethodA_MH.invokeExact(functions.CallDoubleMethodAFp, jniEnvPointer, jobject, mid, jvalues);
-                    default -> {
-                        isRef = true;
-                        yield (long) JNIEnvFunctions.CallObjectMethodA_MH.invokeExact(functions.CallObjectMethodAFp, jniEnvPointer, jobject, mid, jvalues);
-                    }
-                };
-                return isRef ? new GlobalRef(this, MemorySegment.ofAddress(returnValue)) : new GlobalRef(this, new JValue(returnValue));
-            }
-
-        });
-    }
-
-    public Object jObjectToJavaObject(MemorySegment jobject) {
-        return throwable(() -> {
-            CallStaticMethodByName(JNIEnv.class.getDeclaredMethod("setSecret", Object.class), new JValue(jobject.address()));
-            var res = jniToJava.get();
-            jniToJava.remove();
-            return res;
-        });
-    }
-
-    public GlobalRef JavaObjectToJObject(Object o) {
-        return throwable(() -> {
-            setSecret(o);
-            GlobalRef ref = CallStaticMethodByName(JNIEnv.class.getDeclaredMethod("getSecret"));
-            jniToJava.remove();
-            return ref;
-        });
-    }
-
-    public GlobalRef newObject(Constructor ctr, JValue... jValues) {
-        Parameter[] parameters = ctr.getParameters();
-        if (parameters.length != jValues.length) {
-            throw new IllegalArgumentException("jValues size not match");
+            long jvalue = switch (method.getReturnType().getName()) {
+                case "void" -> {
+                    JNIEnvFunctions.CallStaticVoidMethodA_MH.invokeExact(functions.CallStaticVoidMethodAFp, jniEnvPointer, jclassRef.ref(), mid, jvalues);
+                    yield 0L;
+                }
+                case "int" ->
+                        (long) JNIEnvFunctions.CallStaticIntMethodA_MH.invokeExact(functions.CallStaticIntMethodAFp, jniEnvPointer, jclassRef.ref(), mid, jvalues);
+                case "boolean" ->
+                        (long) JNIEnvFunctions.CallStaticBooleanMethodA_MH.invokeExact(functions.CallStaticBooleanMethodAFp, jniEnvPointer, jclassRef.ref(), mid, jvalues);
+                case "byte" ->
+                        (long) JNIEnvFunctions.CallStaticByteMethodA_MH.invokeExact(functions.CallStaticByteMethodAFp, jniEnvPointer, jclassRef.ref(), mid, jvalues);
+                case "char" ->
+                        (long) JNIEnvFunctions.CallStaticCharMethodA_MH.invokeExact(functions.CallStaticCharMethodAFp, jniEnvPointer, jclassRef.ref(), mid, jvalues);
+                case "short" ->
+                        (long) JNIEnvFunctions.CallStaticShortMethodA_MH.invokeExact(functions.CallStaticShortMethodAFp, jniEnvPointer, jclassRef.ref(), mid, jvalues);
+                case "long" ->
+                        (long) JNIEnvFunctions.CallStaticLongMethodA_MH.invokeExact(functions.CallStaticLongMethodAFp, jniEnvPointer, jclassRef.ref(), mid, jvalues);
+                case "float" ->
+                        (long) JNIEnvFunctions.CallStaticFloatMethodA_MH.invokeExact(functions.CallStaticFloatMethodAFp, jniEnvPointer, jclassRef.ref(), mid, jvalues);
+                case "double" ->
+                        (long) JNIEnvFunctions.CallStaticDoubleMethodA_MH.invokeExact(functions.CallStaticDoubleMethodAFp, jniEnvPointer, jclassRef.ref(), mid, jvalues);
+                default -> {
+                    isRef = true;
+                    yield (long) JNIEnvFunctions.CallStaticObjectMethodA_MH.invokeExact(functions.CallStaticObjectMethodAFp, jniEnvPointer, jclassRef.ref(), mid, jvalues);
+                }
+            };
+            return isRef ? new GlobalRef(this, MemorySegment.ofAddress(jvalue)) : new GlobalRef(this, new JValue(jvalue));
         }
-        String sig = Arrays.stream(parameters)
-                .map(Parameter::getType)
-                .map(NativeHelper::classToSig)
-                .collect(Collectors.joining());
-        String methodSig = STR."(\{sig})V";
+    });
+}
 
-        return throwable(() -> {
-            MemorySegment jValuesPtr = allocator.allocateArray(JValue.jvalueLayout, jValues.length);
-            for (int i = 0; i < jValues.length; i++) {
-                jValuesPtr.set(ValueLayout.JAVA_LONG, i * JValue.jvalueLayout.byteSize(), jValues[i].getLong());
-            }
-            try (GlobalRef clsRef = FindClass(ctr.getDeclaringClass())) {
-                MemorySegment mid = (MemorySegment) JNIEnvFunctions.GetMethodID_MH.invokeExact(functions.GetMethodIDFp, jniEnvPointer, clsRef.ref(), allocator.allocateUtf8String("<init>"), allocator.allocateUtf8String(methodSig));
-                MemorySegment newobject = (MemorySegment) JNIEnvFunctions.NewObject_MH.invokeExact(functions.NewObjectAFp, jniEnvPointer, clsRef.ref(), mid, jValuesPtr);
-                return new GlobalRef(this, newobject);
-            }
-        });
+public GlobalRef CallMethodByName(Method method, MemorySegment jobject) {
+    return CallMethodByName(method, jobject, MemorySegment.NULL, "()" + NativeHelper.classToSig(method.getReturnType()));
+}
+
+public GlobalRef CallMethodByName(Method method, MemorySegment jobject, MemorySegment jvalues) {
+    String paramSig = Arrays.stream(method.getParameters())
+            .map(Parameter::getType)
+            .map(NativeHelper::classToSig)
+            .collect(Collectors.joining());
+    return CallMethodByName(method, jobject, jvalues, "(" + paramSig + ")" + NativeHelper.classToSig(method.getReturnType()));
+}
+
+public GlobalRef CallMethodByName(Method method, MemorySegment jobject, MemorySegment jvalues, String sig) {
+    if (method.getParameters().length * JValue.jvalueLayout.byteSize() != jvalues.byteSize()) {
+        throw new IllegalArgumentException("jvalues size not match");
     }
-
-    private MemorySegment initJniEnv() {
-        try {
-            return ((MemorySegment) GET_JNIENV_MH.invokeExact(MAIN_VM_Pointer, JNI_VERSION))
-                    .reinterpret(Long.MAX_VALUE);
-        } catch (Throwable t) {
-            throw new RuntimeException(t);
+    if (Modifier.isStatic(method.getModifiers())) {
+        throw new IllegalArgumentException("only support not static method");
+    }
+    String methodName = method.getName();
+    return throwable(() -> {
+        boolean isRef = false;
+        MemorySegment clazz = (MemorySegment) JNIEnvFunctions.GetObjectClass_MH.invokeExact(functions.GetObjectClassFp, jniEnvPointer, jobject);
+        try (GlobalRef ref = new GlobalRef(this, clazz);) {
+            MemorySegment mid = (MemorySegment) JNIEnvFunctions.GetMethodID_MH.invokeExact(functions.GetMethodIDFp, jniEnvPointer, ref.ref(), allocator.allocateFrom(methodName), allocator.allocateFrom(sig));
+            long returnValue = switch (method.getReturnType().getName()) {
+                case "void" -> {
+                    JNIEnvFunctions.CallVoidMethodA_MH.invokeExact(functions.CallVoidMethodAFp, jniEnvPointer, jobject, mid, jvalues);
+                    yield 0L;
+                }
+                case "int" ->
+                        (long) JNIEnvFunctions.CallIntMethodA_MH.invokeExact(functions.CallIntMethodAFp, jniEnvPointer, jobject, mid, jvalues);
+                case "boolean" ->
+                        (long) JNIEnvFunctions.CallBooleanMethodA_MH.invokeExact(functions.CallBooleanMethodAFp, jniEnvPointer, mid, jvalues);
+                case "byte" ->
+                        (long) JNIEnvFunctions.CallByteMethodA_MH.invokeExact(functions.CallByteMethodAFp, jniEnvPointer, jobject, mid, jvalues);
+                case "char" ->
+                        (long) JNIEnvFunctions.CallCharMethodA_MH.invokeExact(functions.CallCharMethodAFp, jniEnvPointer, jobject, mid, jvalues);
+                case "short" ->
+                        (long) JNIEnvFunctions.CallShortMethodA_MH.invokeExact(functions.CallShortMethodAFp, jniEnvPointer, jobject, mid, jvalues);
+                case "long" ->
+                        (long) JNIEnvFunctions.CallLongMethodA_MH.invokeExact(functions.CallLongMethodAFp, jniEnvPointer, jobject, mid, jvalues);
+                case "float" ->
+                        (long) JNIEnvFunctions.CallFloatMethodA_MH.invokeExact(functions.CallFloatMethodAFp, jniEnvPointer, jobject, mid, jvalues);
+                case "double" ->
+                        (long) JNIEnvFunctions.CallDoubleMethodA_MH.invokeExact(functions.CallDoubleMethodAFp, jniEnvPointer, jobject, mid, jvalues);
+                default -> {
+                    isRef = true;
+                    yield (long) JNIEnvFunctions.CallObjectMethodA_MH.invokeExact(functions.CallObjectMethodAFp, jniEnvPointer, jobject, mid, jvalues);
+                }
+            };
+            return isRef ? new GlobalRef(this, MemorySegment.ofAddress(returnValue)) : new GlobalRef(this, new JValue(returnValue));
         }
-    }
 
-    private static void setSecret(Object o) {
-        jniToJava.set(o);
-    }
+    });
+}
 
-    private static Object getSecret() {
-        return jniToJava.get();
-    }
+public Object jObjectToJavaObject(MemorySegment jobject) {
+    return throwable(() -> {
+        CallStaticMethodByName(JNIEnv.class.getDeclaredMethod("setSecret", Object.class), new JValue(jobject.address()));
+        var res = jniToJava.get();
+        jniToJava.remove();
+        return res;
+    });
+}
 
-    private static MemorySegment initMainVM() throws Throwable {
-        Runtime.getRuntime().loadLibrary("java");
-        String javaHomePath = System.getProperty("java.home", "");
-        if (javaHomePath.isBlank()) {
-            throw new RuntimeException("cant find java.home!");
+public GlobalRef JavaObjectToJObject(Object o) {
+    return throwable(() -> {
+        setSecret(o);
+        GlobalRef ref = CallStaticMethodByName(JNIEnv.class.getDeclaredMethod("getSecret"));
+        jniToJava.remove();
+        return ref;
+    });
+}
+
+public GlobalRef newObject(Constructor ctr, JValue... jValues) {
+    Parameter[] parameters = ctr.getParameters();
+    if (parameters.length != jValues.length) {
+        throw new IllegalArgumentException("jValues size not match");
+    }
+    String sig = Arrays.stream(parameters)
+            .map(Parameter::getType)
+            .map(NativeHelper::classToSig)
+            .collect(Collectors.joining());
+    String methodSig = "(" + sig + ")V";
+
+    return throwable(() -> {
+        MemorySegment jValuesPtr = allocator.allocate(JValue.jvalueLayout, jValues.length);
+        for (int i = 0; i < jValues.length; i++) {
+            jValuesPtr.set(ValueLayout.JAVA_LONG, i * JValue.jvalueLayout.byteSize(), jValues[i].getLong());
         }
-        //根据当前系统判断使用哪个后缀名
-        String libName = System.mapLibraryName("jvm");
-
-        String jvmPath = STR."\{javaHomePath}/lib/server/\{libName}";
-        if (!Files.exists(Path.of(STR."\{javaHomePath}/lib/server/\{libName}"))) {
-            jvmPath = STR."\{javaHomePath}/bin/server/\{libName}";
+        try (GlobalRef clsRef = FindClass(ctr.getDeclaringClass())) {
+            MemorySegment mid = (MemorySegment) JNIEnvFunctions.GetMethodID_MH.invokeExact(functions.GetMethodIDFp, jniEnvPointer, clsRef.ref(), allocator.allocateFrom("<init>"), allocator.allocateFrom(methodSig));
+            MemorySegment newobject = (MemorySegment) JNIEnvFunctions.NewObject_MH.invokeExact(functions.NewObjectAFp, jniEnvPointer, clsRef.ref(), mid, jValuesPtr);
+            return new GlobalRef(this, newobject);
         }
-        Runtime.getRuntime().load(jvmPath);
-        MemorySegment jniGetCreatedJavaVM_FP = SymbolLookup.loaderLookup()
-                .find("JNI_GetCreatedJavaVMs")
-                .get();
-        MethodHandle JNI_GetCreatedJavaVM_MH = Linker.nativeLinker()
-                .downcallHandle(
-                        FunctionDescriptor.of(ValueLayout.JAVA_INT, ValueLayout.ADDRESS, ValueLayout.JAVA_INT, ValueLayout.ADDRESS)
-                )
-                .bindTo(jniGetCreatedJavaVM_FP);
-        Arena global = Arena.global();
-        MemorySegment vm = global.allocate(ValueLayout.ADDRESS);
-        MemorySegment numVMs = global.allocate(ValueLayout.JAVA_INT);
-        //jdk22和其他版本 兼容使用
-        numVMs.set(ValueLayout.JAVA_INT, 0, 0);
-        int i = (int) JNI_GetCreatedJavaVM_MH.invokeExact(vm, 1, numVMs);
-        return vm.get(ValueLayout.ADDRESS, 0);
-    }
+    });
+}
 
-    private static MethodHandle initGetJNIEnvMH() {
-        MemorySegment JNU_GetEnv_FP = SymbolLookup.loaderLookup()
-                .find("JNU_GetEnv")
-                .get();
-        return Linker.nativeLinker()
-                .downcallHandle(FunctionDescriptor.of(ValueLayout.ADDRESS, ValueLayout.ADDRESS, ValueLayout.JAVA_INT))
-                .bindTo(JNU_GetEnv_FP);
+private MemorySegment initJniEnv() {
+    try {
+        return ((MemorySegment) GET_JNIENV_MH.invokeExact(MAIN_VM_Pointer, JNI_VERSION))
+                .reinterpret(Long.MAX_VALUE);
+    } catch (Throwable t) {
+        throw new RuntimeException(t);
     }
+}
+
+private static void setSecret(Object o) {
+    jniToJava.set(o);
+}
+
+private static Object getSecret() {
+    return jniToJava.get();
+}
+
+private static MemorySegment initMainVM() throws Throwable {
+    Runtime.getRuntime().loadLibrary("java");
+    String javaHomePath = System.getProperty("java.home", "");
+    if (javaHomePath.isBlank()) {
+        throw new RuntimeException("cant find java.home!");
+    }
+    //根据当前系统判断使用哪个后缀名
+    String libName = System.mapLibraryName("jvm");
+
+    String jvmPath = javaHomePath + "/lib/server/" + libName;
+    if (!Files.exists(Path.of(javaHomePath + "/lib/server/" + libName))) {
+        jvmPath = javaHomePath + "/bin/server/" + libName;
+    }
+    Runtime.getRuntime().load(jvmPath);
+    MemorySegment jniGetCreatedJavaVM_FP = SymbolLookup.loaderLookup()
+            .find("JNI_GetCreatedJavaVMs")
+            .get();
+    MethodHandle JNI_GetCreatedJavaVM_MH = Linker.nativeLinker()
+            .downcallHandle(
+                    FunctionDescriptor.of(ValueLayout.JAVA_INT, ValueLayout.ADDRESS, ValueLayout.JAVA_INT, ValueLayout.ADDRESS)
+            )
+            .bindTo(jniGetCreatedJavaVM_FP);
+    Arena global = Arena.global();
+    MemorySegment vm = global.allocate(ValueLayout.ADDRESS);
+    MemorySegment numVMs = global.allocate(ValueLayout.JAVA_INT);
+    //jdk22和其他版本 兼容使用
+    numVMs.set(ValueLayout.JAVA_INT, 0, 0);
+    int i = (int) JNI_GetCreatedJavaVM_MH.invokeExact(vm, 1, numVMs);
+    return vm.get(ValueLayout.ADDRESS, 0);
+}
+
+private static MethodHandle initGetJNIEnvMH() {
+    MemorySegment JNU_GetEnv_FP = SymbolLookup.loaderLookup()
+            .find("JNU_GetEnv")
+            .get();
+    return Linker.nativeLinker()
+            .downcallHandle(FunctionDescriptor.of(ValueLayout.ADDRESS, ValueLayout.ADDRESS, ValueLayout.JAVA_INT))
+            .bindTo(JNU_GetEnv_FP);
+}
 }

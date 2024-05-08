@@ -18,39 +18,39 @@ public class JValue {
     }
 
     public boolean getBoolean() {
-        return (boolean) jbooleanVarhandle.get(heapSegment);
+        return (boolean) jbooleanVarhandle.get(heapSegment, 0L);
     }
 
     public byte getByte() {
-        return (byte) jbyteVarhandle.get(heapSegment);
+        return (byte) jbyteVarhandle.get(heapSegment, 0L);
     }
 
     public char getChar() {
-        return (char) jcharVarhandle.get(heapSegment);
+        return (char) jcharVarhandle.get(heapSegment, 0L);
     }
 
     public short getShort() {
-        return (short) jshortVarhandle.get(heapSegment);
+        return (short) jshortVarhandle.get(heapSegment, 0L);
     }
 
     public int getInt() {
-        return (int) jintVarhandle.get(heapSegment);
+        return (int) jintVarhandle.get(heapSegment, 0L);
     }
 
     public long getLong() {
-        return (long) jlongVarhandle.get(heapSegment);
+        return (long) jlongVarhandle.get(heapSegment, 0L);
     }
 
     public float getFloat() {
-        return (float) jfloatVarhandle.get(heapSegment);
+        return (float) jfloatVarhandle.get(heapSegment, 0L);
     }
 
     public double getDouble() {
-        return (double) jdoubleVarhandle.get(heapSegment);
+        return (double) jdoubleVarhandle.get(heapSegment, 0L);
     }
 
     public MemorySegment getObject() {
-        return (MemorySegment) jobjectVarhandle.get(heapSegment);
+        return (MemorySegment) jobjectVarhandle.get(heapSegment, 0L);
     }
 
     public MemorySegment toPtr() {

@@ -1,9 +1,10 @@
 package top.dreamlike.unsafe.core.unreflection;
 
-import sun.misc.Unsafe;
+import top.dreamlike.unsafe.core.helper.GlobalRef;
 import top.dreamlike.unsafe.core.helper.NativeHelper;
+import top.dreamlike.unsafe.core.jni.JNIEnv;
 
-
+import java.lang.foreign.Arena;
 import java.lang.invoke.MethodHandle;
 import java.lang.invoke.MethodHandles;
 import java.lang.invoke.VarHandle;
@@ -11,21 +12,20 @@ import java.lang.reflect.Constructor;
 import java.lang.reflect.Field;
 import java.lang.reflect.Method;
 
+import static top.dreamlike.unsafe.core.helper.NativeHelper.throwable;
+
 public class MasterKey {
     public static MethodHandles.Lookup lookup;
     static {
-       try {
-           Field field = Unsafe.class.getDeclaredField("theUnsafe");
-           field.setAccessible(true);
-           Unsafe unsafe = (Unsafe) field.get(null);
-           Field implLookupField = MethodHandles.Lookup.class.getDeclaredField("IMPL_LOOKUP");
-           Object base = unsafe.staticFieldBase(implLookupField);
-           long fieldOffset = unsafe.staticFieldOffset(implLookupField);
-           lookup = ((MethodHandles.Lookup) unsafe.getObject(base, fieldOffset));
-           System.out.println("unsafe impl");
-       }catch (Exception e) {
-           throw new RuntimeException(e);
-       }
+        try (Arena arena = Arena.ofConfined()) {
+            JNIEnv jniEnv = new JNIEnv(arena);
+            GlobalRef implLookup = jniEnv.GetStaticFieldByName(MethodHandles.Lookup.class.getDeclaredField("IMPL_LOOKUP"));
+            Object o = jniEnv.jObjectToJavaObject(implLookup.ref());
+            lookup = (MethodHandles.Lookup) o;
+            System.out.println("panama impl");
+        }catch (Throwable e){
+            throw new RuntimeException(e);
+        }
     }
 
     public static MethodHandle openTheDoor(Method method) {
@@ -39,4 +39,5 @@ public class MasterKey {
     public static VarHandle openTheDoor(Field field) {
         return NativeHelper.throwable(() -> lookup.unreflectVarHandle(field));
     }
+
 }
