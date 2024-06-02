@@ -5,6 +5,8 @@
 - 自定义调度器
 - Continuation API 包含yield和run原语
 - TerminatingThreadLocal API
+- 特权LookUp
+- java.lang.LiveStackFrameInfo获取当前栈信息，比如说Monitor信息，局部变量表及获取对应引用
 
 原理很简单
 代码如下
