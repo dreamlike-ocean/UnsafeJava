@@ -1,11 +1,11 @@
 package top.dreamlike.unsafe.vthread;
 
-import top.dreamlike.unsafe.core.unreflection.MasterKey;
+
+import top.dreamlike.unsafe.core.MasterKey;
 
 import java.lang.invoke.LambdaMetafactory;
 import java.lang.invoke.MethodHandle;
 import java.lang.invoke.MethodType;
-import java.lang.invoke.VarHandle;
 import java.util.function.BiFunction;
 import java.util.function.Function;
 
@@ -28,6 +28,8 @@ public class Continuation {
     private static final MethodHandle CONTINUATION_RUN_MH = initRunMH();
 
     private static final MethodHandle CONTINUATION_IS_DONE_MH = initIsDoneMH();
+
+
 
     public Continuation(Runnable runnable) {
         this(CONTINUATION_CONSTRUCTOR.apply(scope, runnable));
@@ -72,7 +74,7 @@ public class Continuation {
 
     private static MethodHandle initRunMH() {
         try {
-            MethodHandle methodHandle = MasterKey.openTheDoor(continuationClass.getDeclaredMethod("run"));
+            MethodHandle methodHandle = MasterKey.INSTANCE.openTheDoor(continuationClass.getDeclaredMethod("run"));
             return methodHandle
                     .asType(MethodType.methodType(void.class, Object.class));
         } catch (Throwable t) {
@@ -82,7 +84,7 @@ public class Continuation {
 
     private static MethodHandle initYieldMH() {
         try {
-            MethodHandle methodHandle = MasterKey.openTheDoor(continuationClass.getDeclaredMethod("yield", scopeClass));
+            MethodHandle methodHandle = MasterKey.INSTANCE.openTheDoor(continuationClass.getDeclaredMethod("yield", scopeClass));
             return methodHandle
                     .asType(MethodType.methodType(boolean.class, Object.class));
         } catch (Throwable t) {
@@ -102,7 +104,7 @@ public class Continuation {
 
     private static Object initContinuationScope() {
         try {
-            MethodHandle scopeConstructor = MasterKey.openTheDoor(scopeClass.getDeclaredConstructor(String.class));
+            MethodHandle scopeConstructor = MasterKey.INSTANCE.openTheDoor(scopeClass.getDeclaredConstructor(String.class));
             scopeConstructor = scopeConstructor
                     .asType(scopeConstructor.type().changeReturnType(Object.class));
             return scopeConstructor.invokeExact(SCOPE_NAME);
@@ -125,7 +127,7 @@ public class Continuation {
         try {
             String continuationClassName = "jdk.internal.vm.Continuation";
             Class<?> continuationClass = Class.forName(continuationClassName);
-            MethodHandle continuationConstructor = MasterKey.openTheDoor(continuationClass.getDeclaredConstructor(scopeClass, Runnable.class));
+            MethodHandle continuationConstructor = MasterKey.INSTANCE.openTheDoor(continuationClass.getDeclaredConstructor(scopeClass, Runnable.class));
 
             MethodHandle methodHandle = LambdaMetafactory.metafactory(
                     VirtualThreadUnsafe.IMPL_LOOKUP,
@@ -144,7 +146,7 @@ public class Continuation {
     //通过ContinuationScope来获取Continuation
     private static Function<Object, Object> initCurrentContinuationSupplier() {
         try {
-            MethodHandle getCurrentContinuation = MasterKey.openTheDoor(continuationClass.getDeclaredMethod("getCurrentContinuation", scopeClass));
+            MethodHandle getCurrentContinuation = MasterKey.INSTANCE.openTheDoor(continuationClass.getDeclaredMethod("getCurrentContinuation", scopeClass));
             MethodHandle lambda = LambdaMetafactory.metafactory(
                     VirtualThreadUnsafe.IMPL_LOOKUP,
                     "apply",
@@ -161,7 +163,7 @@ public class Continuation {
 
     private static MethodHandle initIsDoneMH() {
         try {
-            MethodHandle handle = MasterKey.openTheDoor(continuationClass.getDeclaredMethod("isDone"));
+            MethodHandle handle = MasterKey.INSTANCE.openTheDoor(continuationClass.getDeclaredMethod("isDone"));
             return handle
                     .asType(MethodType.methodType(boolean.class, Object.class));
         }catch (Throwable t) {

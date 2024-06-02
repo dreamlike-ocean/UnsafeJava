@@ -1,8 +1,8 @@
 import org.junit.Assert;
 import org.junit.Test;
-import top.dreamlike.unsafe.core.jni.JNIEnv;
-import top.dreamlike.unsafe.core.helper.GlobalRef;
-import top.dreamlike.unsafe.core.helper.JValue;
+import top.dreamlike.unsafe.core.panama.helper.GlobalRef;
+import top.dreamlike.unsafe.core.panama.helper.JValue;
+import top.dreamlike.unsafe.core.panama.jni.JNIEnv;
 
 import java.lang.foreign.Arena;
 import java.lang.foreign.MemorySegment;
@@ -33,7 +33,7 @@ public class ClassTest {
 
     @Test
     public void getStaticField() throws Throwable {
-        try(Arena arena = Arena.ofConfined()) {
+        try (Arena arena = Arena.ofConfined()) {
             JNIEnv jniEnv = new JNIEnv(arena);
             int defaultInitialCapacity = jniEnv.GetStaticFieldByName(HashMap.class.getDeclaredField("DEFAULT_INITIAL_CAPACITY")).jValue.getInt();
             Assert.assertEquals(defaultInitialCapacity, 1 << 4);
@@ -44,11 +44,11 @@ public class ClassTest {
 
     @Test
     public void setStaticField() throws Throwable {
-        try(Arena arena = Arena.ofConfined()) {
+        try (Arena arena = Arena.ofConfined()) {
             JNIEnv jniEnv = new JNIEnv(arena);
             var IMPL_LOOKUP = jniEnv.GetStaticFieldByName(MethodHandles.Lookup.class.getDeclaredField("IMPL_LOOKUP")).ref();
             GlobalRef ref = new GlobalRef(jniEnv, IMPL_LOOKUP);
-            try(ref) {
+            try (ref) {
                 jniEnv.SetStaticFieldByName(ClassTest.class.getDeclaredField("lookup"), ref);
             }
             Assert.assertNotNull(lookup);
@@ -56,7 +56,7 @@ public class ClassTest {
     }
 
     @Test
-    public void testInvokeStaticMethod() throws Throwable{
+    public void testInvokeStaticMethod() throws Throwable {
         try (Arena arena = Arena.ofConfined();) {
             JNIEnv env = new JNIEnv(arena);
 
@@ -66,9 +66,9 @@ public class ClassTest {
             Assert.assertEquals(maxRes.jValue.getInt(), 2024);
             method = ClassTest.class.getDeclaredMethod("a", int.class, int.class);
 
-            MemorySegment segment = arena.allocateArray(JValue.jvalueLayout, 2);
-            JValue.jintVarhandle.set(segment, 2024);
-            JValue.jintVarhandle.set(segment.asSlice(JValue.jvalueLayout.byteSize()), 1);
+            MemorySegment segment = arena.allocate(JValue.jvalueLayout, 2);
+            JValue.jintVarhandle.set(segment, 0L, 2024);
+            JValue.jintVarhandle.set(segment.asSlice(JValue.jvalueLayout.byteSize()), 0L, 1);
             maxRes = env.CallStaticMethodByName(method, segment);
             Assert.assertEquals(maxRes.jValue.getInt(), a(2024, 1));
 
@@ -96,11 +96,6 @@ public class ClassTest {
             Assert.assertEquals(((AForTest) o).getA(), 1);
         }
     }
-
-
-
-
-
 
 
     public static int a(int a, int b) {

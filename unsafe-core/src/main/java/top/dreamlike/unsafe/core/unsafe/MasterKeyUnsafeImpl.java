@@ -1,8 +1,8 @@
-package top.dreamlike.unsafe.core.unreflection;
+package top.dreamlike.unsafe.core.unsafe;
 
 import sun.misc.Unsafe;
+import top.dreamlike.unsafe.core.MasterKey;
 import top.dreamlike.unsafe.core.helper.NativeHelper;
-
 
 import java.lang.invoke.MethodHandle;
 import java.lang.invoke.MethodHandles;
@@ -11,7 +11,10 @@ import java.lang.reflect.Constructor;
 import java.lang.reflect.Field;
 import java.lang.reflect.Method;
 
-public class MasterKey {
+public class MasterKeyUnsafeImpl implements MasterKey {
+
+    public static final MasterKeyUnsafeImpl INSTANCE = new MasterKeyUnsafeImpl();
+
     public static MethodHandles.Lookup lookup;
     static {
        try {
@@ -28,15 +31,20 @@ public class MasterKey {
        }
     }
 
-    public static MethodHandle openTheDoor(Method method) {
+    public MethodHandle openTheDoor(Method method) {
         return NativeHelper.throwable(() -> lookup.unreflect(method));
     }
 
-    public static MethodHandle openTheDoor(Constructor ctor) {
+    public MethodHandle openTheDoor(Constructor ctor) {
         return NativeHelper.throwable(() -> lookup.unreflectConstructor(ctor));
     }
 
-    public static VarHandle openTheDoor(Field field) {
+    public VarHandle openTheDoor(Field field) {
         return NativeHelper.throwable(() -> lookup.unreflectVarHandle(field));
+    }
+
+    @Override
+    public MethodHandles.Lookup getTrustedLookup() {
+        return lookup;
     }
 }

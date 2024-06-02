@@ -1,4 +1,4 @@
-package top.dreamlike.unsafe.core.helper;
+package top.dreamlike.unsafe.core.panama.helper;
 
 import java.lang.foreign.MemoryLayout;
 import java.lang.foreign.MemorySegment;

@@ -9,7 +9,7 @@
         <version>1.0</version>
     </parent>
 
-    <artifactId>unsafe-vthread</artifactId>
+    <artifactId>unsafe-jdk</artifactId>
     <version>1.0.0</version>
 
     <properties>

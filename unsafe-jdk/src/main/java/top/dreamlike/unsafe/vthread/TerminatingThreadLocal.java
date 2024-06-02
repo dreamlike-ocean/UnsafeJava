@@ -3,7 +3,7 @@ package top.dreamlike.unsafe.vthread;
 import net.bytebuddy.ByteBuddy;
 import net.bytebuddy.implementation.MethodDelegation;
 import net.bytebuddy.matcher.ElementMatchers;
-import top.dreamlike.unsafe.core.unreflection.MasterKey;
+import top.dreamlike.unsafe.core.MasterKey;
 
 import java.lang.invoke.MethodHandle;
 import java.lang.invoke.VarHandle;
@@ -51,8 +51,8 @@ public class TerminatingThreadLocal<T> extends ThreadLocal<T> {
         var customerTerminatingThreadLocalClass = init();
 
         try {
-            internalConstructorMH = MasterKey.openTheDoor(customerTerminatingThreadLocalClass.getDeclaredConstructor());
-            callBackVH = MasterKey.openTheDoor(customerTerminatingThreadLocalClass.getDeclaredField("callback"));
+            internalConstructorMH = MasterKey.INSTANCE.openTheDoor(customerTerminatingThreadLocalClass.getDeclaredConstructor());
+            callBackVH = MasterKey.INSTANCE.openTheDoor(customerTerminatingThreadLocalClass.getDeclaredField("callback"));
         }catch (Throwable throwable) {
             throw new RuntimeException(throwable);
         }

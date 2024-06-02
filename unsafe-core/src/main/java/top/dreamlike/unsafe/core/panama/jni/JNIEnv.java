@@ -1,8 +1,8 @@
-package top.dreamlike.unsafe.core.jni;
+package top.dreamlike.unsafe.core.panama.jni;
 
-import top.dreamlike.unsafe.core.helper.GlobalRef;
-import top.dreamlike.unsafe.core.helper.JValue;
 import top.dreamlike.unsafe.core.helper.NativeHelper;
+import top.dreamlike.unsafe.core.panama.helper.GlobalRef;
+import top.dreamlike.unsafe.core.panama.helper.JValue;
 
 import java.lang.foreign.*;
 import java.lang.invoke.MethodHandle;

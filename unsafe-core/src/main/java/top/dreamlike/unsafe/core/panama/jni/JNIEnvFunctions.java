@@ -1,4 +1,4 @@
-package top.dreamlike.unsafe.core.jni;
+package top.dreamlike.unsafe.core.panama.jni;
 
 import java.lang.foreign.FunctionDescriptor;
 import java.lang.foreign.Linker;

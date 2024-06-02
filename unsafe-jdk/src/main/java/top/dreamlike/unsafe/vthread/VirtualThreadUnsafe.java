@@ -1,6 +1,8 @@
 package top.dreamlike.unsafe.vthread;
 
-import top.dreamlike.unsafe.core.unreflection.MasterKey;
+
+
+import top.dreamlike.unsafe.core.MasterKey;
 
 import java.lang.invoke.LambdaMetafactory;
 import java.lang.invoke.MethodHandle;
@@ -12,7 +14,7 @@ import java.util.function.Supplier;
 
 public class VirtualThreadUnsafe {
 
-    public static MethodHandles.Lookup IMPL_LOOKUP = MasterKey.lookup;
+    public static MethodHandles.Lookup IMPL_LOOKUP = MasterKey.INSTANCE.getTrustedLookup();
 
     public final static Function<Executor, Thread.Builder.OfVirtual> VIRTUAL_THREAD_BUILDER = fetchVirtualThreadBuilder();
 
@@ -21,7 +23,7 @@ public class VirtualThreadUnsafe {
     private static Function<Executor, Thread.Builder.OfVirtual> fetchVirtualThreadBuilder() {
         var tmp = Thread.ofVirtual().getClass();
         try {
-            MethodHandle builderMethodHandle = MasterKey.openTheDoor(tmp.getDeclaredConstructor(Executor.class));
+            MethodHandle builderMethodHandle = MasterKey.INSTANCE.openTheDoor(tmp.getDeclaredConstructor(Executor.class));
             MethodHandle lambdaFactory = LambdaMetafactory.metafactory(
                     IMPL_LOOKUP,
                     "apply",
@@ -38,7 +40,7 @@ public class VirtualThreadUnsafe {
 
     private static Supplier<Thread> carrierThreadSupplier() {
         try {
-            MethodHandle currentCarrierThreadMh = MasterKey.openTheDoor(Thread.class.getDeclaredMethod("currentCarrierThread"));
+            MethodHandle currentCarrierThreadMh = MasterKey.INSTANCE.openTheDoor(Thread.class.getDeclaredMethod("currentCarrierThread"));
             MethodHandle lambda = LambdaMetafactory.metafactory(
                     IMPL_LOOKUP,
                     "get",

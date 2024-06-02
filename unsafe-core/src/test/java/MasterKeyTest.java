@@ -1,11 +1,12 @@
 import org.junit.Assert;
 import org.junit.Test;
-import top.dreamlike.unsafe.core.unreflection.MasterKey;
 
 import java.lang.invoke.MethodHandle;
 import java.lang.reflect.Field;
 import java.lang.reflect.Method;
 import java.util.UUID;
+
+import static top.dreamlike.unsafe.core.panama.MasterKeyPanamaImpl.INSTANCE;
 
 public class MasterKeyTest {
 
@@ -18,7 +19,7 @@ public class MasterKeyTest {
         });
 
         String arg0 = UUID.randomUUID().toString();
-        String res = (String) MasterKey.openTheDoor(privateMethod).invokeExact(arg0);
+        String res = (String) INSTANCE.openTheDoor(privateMethod).invokeExact(arg0);
         Assert.assertEquals(arg0, res);
 
     }
@@ -31,7 +32,7 @@ public class MasterKeyTest {
             field.get(null);
         });
 
-        UUID res = (UUID) MasterKey.openTheDoor(field).get();
+        UUID res = (UUID) INSTANCE.openTheDoor(field).get();
         Assert.assertEquals(PrivateClass.getUuid(), res);
 
     }
@@ -43,7 +44,7 @@ public class MasterKeyTest {
             currentCarrierThread.invoke(null);
         });
 
-        MethodHandle currentCarrierThreadMh = MasterKey.openTheDoor(currentCarrierThread);
+        MethodHandle currentCarrierThreadMh = INSTANCE.openTheDoor(currentCarrierThread);
         Thread thread = (Thread) currentCarrierThreadMh.invokeExact();
         Assert.assertEquals(thread, Thread.currentThread());
 
