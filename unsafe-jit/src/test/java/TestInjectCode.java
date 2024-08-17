@@ -1,20 +1,26 @@
 import io.github.dreamlike.jit.AMD64Injector;
+import jnr.x86asm.Asm;
+import jnr.x86asm.Assembler;
+import jnr.x86asm.CPU;
+import jnr.x86asm.Immediate;
 import org.junit.Assert;
 import org.junit.Test;
 
 import java.lang.reflect.Method;
+import java.nio.ByteBuffer;
 
 public class TestInjectCode {
 
     @Test
     public void test() throws NoSuchMethodException {
         Method method = NativeClass.class.getDeclaredMethod("cal");
-//        mov     eax, 20010329
-        //ret
-        AMD64Injector.inject(method, new byte[]{
-                        (byte) 0xb8, (byte) 0x59, 0x55, 0x31, 0x01,
-                        (byte) 0xc3
-                }
+        Assembler assembler = new Assembler(CPU.X86_64);
+        assembler.mov(Asm.eax, Immediate.imm(20010329));
+        assembler.ret();
+        ByteBuffer buffer = ByteBuffer.allocate(assembler.codeSize());
+        assembler.relocCode(buffer, 0);
+        AMD64Injector.inject(method,
+                buffer.array()
         );
         long cal = NativeClass.cal();
         Assert.assertEquals(20010329,cal);

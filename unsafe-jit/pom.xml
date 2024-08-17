@@ -18,6 +18,13 @@
     </properties>
 
     <dependencies>
+        <!-- https://mvnrepository.com/artifact/com.github.jnr/jnr-x86asm -->
+        <dependency>
+            <groupId>com.github.jnr</groupId>
+            <artifactId>jnr-x86asm</artifactId>
+            <version>1.0.2</version>
+        </dependency>
+
         <dependency>
             <groupId>io.github.dreamlike-ocean</groupId>
             <artifactId>unsafe-core</artifactId>
