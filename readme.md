@@ -37,7 +37,7 @@ maven 坐标为，本库以multi-release的形式发布，所以你可以在jdk8
 <dependency>
   <groupId>io.github.dreamlike-ocean</groupId>
   <artifactId>unsafe-core</artifactId>
-  <version>1.2</version>
+  <version>1.3</version>
 </dependency>
 ```
 

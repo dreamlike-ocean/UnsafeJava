@@ -40,6 +40,7 @@
         <module>unsafe-jdk</module>
         <module>vertx-ext</module>
         <module>unsafe-core</module>
+        <module>unsafe-jit</module>
     </modules>
 
     <properties>
