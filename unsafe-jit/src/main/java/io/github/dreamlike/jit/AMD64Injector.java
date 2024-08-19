@@ -12,17 +12,37 @@ import jdk.vm.ci.runtime.JVMCI;
 import jdk.vm.ci.runtime.JVMCIBackend;
 import jdk.vm.ci.runtime.JVMCICompiler;
 
+import java.lang.foreign.*;
+import java.lang.invoke.MethodHandle;
 import java.lang.invoke.MethodHandles;
+import java.lang.invoke.VarHandle;
 import java.lang.reflect.Method;
 import java.lang.reflect.Modifier;
 
 public class AMD64Injector {
 
+    public static final long pageSize;
+
+    private static final MethodHandle mprotectMH;
 
     static {
         try {
             MethodHandles.lookup().ensureInitialized(Init.class);
-        } catch (IllegalAccessException e) {
+
+
+            pageSize = (int) Linker.nativeLinker()
+                    .downcallHandle(
+                            Linker.nativeLinker().defaultLookup().find("getpagesize").get(),
+                            FunctionDescriptor.of(ValueLayout.JAVA_INT)
+                    ).invokeExact();
+
+            mprotectMH = Linker.nativeLinker()
+                    .downcallHandle(
+                            Linker.nativeLinker().defaultLookup().find("mprotect").get(),
+                            FunctionDescriptor.of(ValueLayout.JAVA_INT, ValueLayout.ADDRESS, ValueLayout.JAVA_INT, ValueLayout.JAVA_INT),
+                            Linker.Option.captureCallState("errno")
+                    );
+        } catch (Throwable e) {
             throw new RuntimeException(e);
         }
     }
@@ -83,5 +103,25 @@ public class AMD64Injector {
         backend.getCodeCache().setDefaultCode(resolvedJavaMethod, nm);
 
 
+    }
+
+    public static Syscall mprotect(MemorySegment memorySegment) throws Throwable {
+        long pageStart = memorySegment.address();
+        pageStart = pageStart - (pageStart % pageSize);
+        memorySegment = MemorySegment.ofAddress(pageStart); //测试使用 大概率不会超过一页
+
+        long pageEnd = memorySegment.address() + memorySegment.byteSize();
+        pageEnd = pageEnd - (pageStart % pageSize);
+
+        StructLayout capturedStateLayout = Linker.Option.captureStateLayout();
+        VarHandle errnoHandle = capturedStateLayout.varHandle(MemoryLayout.PathElement.groupElement("errno"));
+        //计算该区间需要多少页
+        long count = (pageEnd - pageStart) / pageSize + 1;
+        try (Arena arena = Arena.ofConfined()) {
+            MemorySegment capturedState = arena.allocate(capturedStateLayout);
+            int res = (int) mprotectMH.invokeExact(capturedState, memorySegment, (int) (count * pageSize), 7);
+            int errno = (int) errnoHandle.get(capturedState, 0);
+            return new Syscall(errno, res);
+        }
     }
 }
