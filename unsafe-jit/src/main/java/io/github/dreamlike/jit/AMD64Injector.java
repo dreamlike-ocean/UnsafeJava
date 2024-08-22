@@ -16,6 +16,7 @@ import java.lang.foreign.*;
 import java.lang.invoke.MethodHandle;
 import java.lang.invoke.MethodHandles;
 import java.lang.invoke.VarHandle;
+import java.lang.reflect.Field;
 import java.lang.reflect.Method;
 import java.lang.reflect.Modifier;
 
@@ -28,7 +29,6 @@ public class AMD64Injector {
     static {
         try {
             MethodHandles.lookup().ensureInitialized(Init.class);
-
 
             pageSize = (int) Linker.nativeLinker()
                     .downcallHandle(
@@ -48,6 +48,11 @@ public class AMD64Injector {
     }
 
     private static final JVMCIBackend backend = JVMCI.getRuntime().getHostJVMCIBackend();
+
+    public static int offset(Field field) {
+        return backend.getMetaAccess().lookupJavaField(field)
+                .getOffset();
+    }
 
     public static void inject(Method m, byte[] machineCode) {
         int modifiers = m.getModifiers();
