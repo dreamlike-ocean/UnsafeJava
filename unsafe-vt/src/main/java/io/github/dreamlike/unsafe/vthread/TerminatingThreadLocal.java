@@ -13,8 +13,6 @@ import java.lang.invoke.MethodHandles;
 import java.lang.reflect.Field;
 import java.lang.reflect.Method;
 import java.lang.reflect.Modifier;
-import java.nio.file.Files;
-import java.nio.file.Paths;
 
 public class TerminatingThreadLocal<T> extends ThreadLocal<T> {
 
@@ -105,7 +103,6 @@ public class TerminatingThreadLocal<T> extends ThreadLocal<T> {
                    cb.return_();
                });
            });
-           Files.write(Paths.get("proxy.class"), bytes);
            return MethodHandles.lookup().defineClass(bytes);
        }catch (Throwable throwable) {
            throw new RuntimeException(throwable);
