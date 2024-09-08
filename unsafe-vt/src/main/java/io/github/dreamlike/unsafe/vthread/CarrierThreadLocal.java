@@ -1,4 +1,4 @@
-package top.dreamlike.unsafe.vthread;
+package io.github.dreamlike.unsafe.vthread;
 
 
 import top.dreamlike.unsafe.core.MasterKey;

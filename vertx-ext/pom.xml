@@ -32,7 +32,7 @@
     <dependencies>
         <dependency>
             <groupId>io.github.dreamlike-ocean</groupId>
-            <artifactId>unsafe-jdk</artifactId>
+            <artifactId>unsafe-vt</artifactId>
         </dependency>
         <dependency>
             <groupId>io.vertx</groupId>
