@@ -54,7 +54,6 @@
                     <source>${java.version}</source>
                     <target>${java.version}</target>
                     <compilerArgs>
-                        <arg>--enable-preview</arg>
                         <arg>--add-modules</arg>
                         <arg>jdk.internal.vm.ci</arg>
                         <arg>--add-exports</arg>
@@ -76,7 +75,6 @@
                 <artifactId>surefire-junit4</artifactId>
                 <version>3.1.2</version>
                 <configuration>
-                    <argLine>--enable-preview</argLine>
                     <argline>-XX:+UnlockExperimentalVMOptions</argline>
                     <argline>-XX:+EnableJVMCI</argline>
                 </configuration>

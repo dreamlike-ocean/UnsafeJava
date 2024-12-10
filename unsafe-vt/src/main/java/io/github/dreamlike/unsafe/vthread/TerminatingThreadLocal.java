@@ -4,7 +4,6 @@ package io.github.dreamlike.unsafe.vthread;
 import top.dreamlike.unsafe.core.MasterKey;
 
 import java.lang.classfile.ClassFile;
-import java.lang.classfile.TypeKind;
 import java.lang.constant.ClassDesc;
 import java.lang.constant.ConstantDescs;
 import java.lang.constant.MethodTypeDesc;
@@ -88,7 +87,7 @@ public class TerminatingThreadLocal<T> extends ThreadLocal<T> {
                it.withMethodBody("threadTerminated", MethodTypeDesc.of(ConstantDescs.CD_void, ConstantDescs.CD_Object),Modifier.PROTECTED, cb -> {
                    cb.aload(0);
                    cb.getfield(thisClassDesc, "callback", CallBack.class.describeConstable().get());
-                   cb.loadInstruction(TypeKind.ReferenceType,   cb.parameterSlot(0));
+                   cb.aload(cb.parameterSlot(0));
                    cb.invokeinterface(CallBack.class.describeConstable().get(), "threadTerminated", MethodTypeDesc.of(ConstantDescs.CD_void, ConstantDescs.CD_Object));
                    cb.return_();
                });
@@ -98,7 +97,7 @@ public class TerminatingThreadLocal<T> extends ThreadLocal<T> {
                    cb.invokespecial(threadLocalClass.describeConstable().get(), ConstantDescs.INIT_NAME, ConstantDescs.MTD_void);
                    //this
                    cb.aload(0);
-                   cb.loadInstruction(TypeKind.ReferenceType,   cb.parameterSlot(0));
+                   cb.aload(cb.parameterSlot(0));
                    cb.putfield(thisClassDesc, "callback", CallBack.class.describeConstable().get());
                    cb.return_();
                });

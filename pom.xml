@@ -9,7 +9,7 @@
     <url>https://github.com/dreamlike-ocean/UnsafeJava</url>
     <groupId>io.github.dreamlike-ocean</groupId>
     <artifactId>unsafe-java</artifactId>
-    <version>1.0.1</version>
+    <version>1.0.2</version>
     <packaging>pom</packaging>
 
     <licenses>
@@ -47,11 +47,11 @@
     <properties>
         <main.version>1.0.1</main.version>
         <project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
-        <java.version>22</java.version>
+        <java.version>24</java.version>
         <core.version>1.3.1</core.version>
         <maven.compiler.source>${java.version}</maven.compiler.source>
         <maven.compiler.target>${java.version}</maven.compiler.target>
-        <unsafe-vt.version>1.0.3</unsafe-vt.version>
+        <unsafe-vt.version>1.0.4</unsafe-vt.version>
     </properties>
 
     <dependencyManagement>
@@ -115,7 +115,6 @@
                             <!-- jdk1.8要加上，1.7要去掉，否则会报错 -->
                             <additionalJOptions>
                                 <additionalJOption>-Xdoclint:none</additionalJOption>
-                                <additonalJOption>--enable-preview</additonalJOption>
                             </additionalJOptions>
                         </configuration>
                         <executions>

@@ -44,7 +44,6 @@
                 <configuration>
                     <source>${java.version}</source>
                     <target>${java.version}</target>
-                    <compilerArgs>--enable-preview</compilerArgs>
                 </configuration>
             </plugin>
             <plugin>
@@ -52,7 +51,7 @@
                 <artifactId>surefire-junit4</artifactId>
                 <version>3.1.2</version>
                 <configuration>
-                    <argLine>--enable-preview</argLine>
+
                 </configuration>
             </plugin>
         </plugins>
