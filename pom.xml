@@ -9,7 +9,7 @@
     <url>https://github.com/dreamlike-ocean/UnsafeJava</url>
     <groupId>io.github.dreamlike-ocean</groupId>
     <artifactId>unsafe-java</artifactId>
-    <version>1.0.2</version>
+    <version>1.0.3</version>
     <packaging>pom</packaging>
 
     <licenses>
